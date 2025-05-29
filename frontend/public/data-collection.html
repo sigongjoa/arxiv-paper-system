@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>arXiv Data Collection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            gap: 0;
+        }
+        
+        .nav-item {
+            position: relative;
+        }
+        
+        .nav-link {
+            display: block;
+            padding: 15px 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+        }
+        
+        .nav-link:hover {
+            color: #007bff;
+            background-color: #f8f9fa;
+        }
+        
+        .nav-link.active {
+            color: #007bff;
+            background-color: #e7f3ff;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .navbar-nav {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                display: none;
+            }
+            
+            .navbar-nav.active {
+                display: flex;
+            }
+            
+            .nav-link {
+                padding: 15px 20px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .submit-btn {
+            background: #007bff;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            background: #0056b3;
+        }
+
+        .submit-btn:disabled {
+            background: #6c757d !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .results-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 200px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .progress-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .progress-text {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .progress-details {
+            font-size: 14px;
+            color: #6c757d;
+            line-height: 1.4;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .paper-list {
+            list-style: none;
+        }
+
+        .paper-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            transition: all 0.2s ease;
+        }
+
+        .paper-item:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .paper-title {
+            font-weight: 600;
+            color: #007bff;
+            margin-bottom: 8px;
+            text-decoration: none;
+        }
+
+        .paper-authors {
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .paper-summary {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .summary-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .summary-btn:hover {
+            background: #218838;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .form-row .form-group {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="data-collection.html" class="navbar-brand">arXiv Manager</a>
+            
+            <ul class="navbar-nav" id="navbar-nav">
+                <li class="nav-item">
+                    <a href="data-collection.html" class="nav-link active">📊 Collection</a>
+                </li>
+                <li class="nav-item">
+                    <a href="arxiv-search.html" class="nav-link">🔍 Search</a>
+                </li>
+                <li class="nav-item">
+                    <a href="paper-summary.html" class="nav-link">📋 Summaries</a>
+                </li>
+            </ul>
+            
+            <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="header">
+            <h1>arXiv Paper Collection</h1>
+            <p>Search and collect academic papers from the arXiv repository</p>
+        </header>
+
+        <section class="form-section">
+            <h2>Crawl Parameters</h2>
+            <form id="arxiv-form" class="arxiv-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="days-back">Days Back</label>
+                        <input type="number" id="days-back" name="days-back" class="days-input" 
+                               min="1" max="30" value="7">
+                        <div class="help-text">How many days back to crawl (1-30)</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="domain-select">Domain</label>
+                        <select id="domain-select" name="domain-select" class="domain-select">
+                            <option value="computer">Computer Science</option>
+                            <option value="math">Mathematics</option>
+                            <option value="physics">Physics</option>
+                            <option value="all">All Domains</option>
+                        </select>
+                        <div class="help-text">Select main domain</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category-select">Category</label>
+                        <select id="category-select" name="category-select" class="category-select">
+                            <option value="all">All Categories</option>
+                        </select>
+                        <div class="help-text">Select specific category (optional)</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="max-results">Maximum Results</label>
+                        <input type="number" id="max-results" name="max-results" class="results-input" 
+                               min="10" max="500" value="50">
+                        <div class="help-text">Number of papers to display (10-500)</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <button type="submit" class="submit-btn" id="crawl-btn">
+                            Crawl arXiv Papers
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="submit-btn" id="show-btn" style="background: #28a745;">
+                            Show Recent Papers
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="submit-btn" id="stats-btn" style="background: #6c757d;">
+                            Database Stats
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="results-section">
+            <h2>Results</h2>
+            <div id="results-container" class="results-container">
+                <div class="loading" id="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <span id="loading-text">Processing request...</span>
+                </div>
+                
+                <div id="progress-container" class="progress-container" style="display: none;">
+                    <div class="progress-text" id="progress-text">Initializing...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="progress-details" id="progress-details">
+                        <div>Status: <span id="status-text">Starting...</span></div>
+                        <div>Elapsed Time: <span id="elapsed-time">0s</span></div>
+                        <div>Papers Found: <span id="papers-count">0</span></div>
+                    </div>
+                </div>
+                
+                <div id="error-message" class="error" style="display: none;"></div>
+                
+                <div id="paper-list-view" style="display: none;">
+                    <ul id="paper-list" class="paper-list"></ul>
+                    <button id="generate-summary" class="summary-btn" style="display: none;">
+                        Generate AI Summaries
+                    </button>
+                    <button id="view-summaries" class="summary-btn" style="display: none;">
+                        View Paper Summaries
+                    </button>
+                </div>
+                
+                <div id="stats-display" style="display: none;">
+                    <h3>Database Statistics</h3>
+                    <div id="stats-content"></div>
+                </div>
+                
+                <div id="default-state">
+                    <p>Select domain and parameters above, then click "Crawl arXiv Papers" to collect new papers or "Show Recent Papers" to view existing papers.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let collectedPapers = [];
+        let progressInterval;
+        let startTime;
+        
+        function showProgress(type, initialMessage = 'Starting...') {
+            hideAllSections();
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('progress-text').textContent = initialMessage;
+            document.getElementById('status-text').textContent = 'Initializing...';
+            document.getElementById('papers-count').textContent = '0';
+            document.getElementById('progress-fill').style.width = '0%';
+            
+            startTime = Date.now();
+            
+            // Start progress animation
+            progressInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('elapsed-time').textContent = elapsed + 's';
+                
+                // Simulate progress for visual feedback
+                const currentWidth = parseInt(document.getElementById('progress-fill').style.width) || 0;
+                if (currentWidth < 90) {
+                    document.getElementById('progress-fill').style.width = (currentWidth + Math.random() * 5) + '%';
+                }
+            }, 1000);
+        }
+        
+        function updateProgress(status, papersCount = 0, percentage = null) {
+            document.getElementById('status-text').textContent = status;
+            document.getElementById('papers-count').textContent = papersCount;
+            
+            if (percentage !== null) {
+                document.getElementById('progress-fill').style.width = percentage + '%';
+            }
+        }
+        
+        function hideProgress() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            document.getElementById('progress-container').style.display = 'none';
+        }
+        
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const navbarNav = document.getElementById('navbar-nav');
+            navbarNav.classList.toggle('active');
+        });
+        
+        // Category mappings
+        const categoryMappings = {
+            computer: {
+                'cs.AI': 'Artificial Intelligence',
+                'cs.LG': 'Machine Learning', 
+                'cs.CV': 'Computer Vision',
+                'cs.CL': 'Computation and Language',
+                'cs.CR': 'Cryptography and Security',
+                'cs.DC': 'Distributed Computing',
+                'cs.DS': 'Data Structures and Algorithms',
+                'cs.SE': 'Software Engineering',
+                'cs.IT': 'Information Theory',
+                'cs.CC': 'Computational Complexity',
+                'cs.CG': 'Computational Geometry',
+                'cs.GT': 'Computer Science and Game Theory',
+                'cs.HC': 'Human-Computer Interaction',
+                'cs.IR': 'Information Retrieval',
+                'cs.LO': 'Logic in Computer Science',
+                'cs.MA': 'Multiagent Systems',
+                'cs.MM': 'Multimedia',
+                'cs.MS': 'Mathematical Software',
+                'cs.NE': 'Neural and Evolutionary Computing',
+                'cs.NI': 'Networking and Internet Architecture',
+                'cs.OH': 'Other Computer Science',
+                'cs.OS': 'Operating Systems',
+                'cs.PF': 'Performance',
+                'cs.PL': 'Programming Languages',
+                'cs.RO': 'Robotics',
+                'cs.SC': 'Symbolic Computation',
+                'cs.SD': 'Sound',
+                'cs.SI': 'Social and Information Networks',
+                'cs.SY': 'Systems and Control'
+            },
+            math: {
+                'math.AG': 'Algebraic Geometry',
+                'math.AT': 'Algebraic Topology',
+                'math.CO': 'Combinatorics',
+                'math.DS': 'Dynamical Systems',
+                'math.NA': 'Numerical Analysis',
+                'math.NT': 'Number Theory',
+                'math.PR': 'Probability',
+                'math.ST': 'Statistics Theory',
+                'math.OC': 'Optimization and Control',
+                'math.AC': 'Commutative Algebra',
+                'math.AP': 'Analysis of PDEs',
+                'math.CA': 'Classical Analysis and ODEs',
+                'math.CT': 'Category Theory',
+                'math.CV': 'Complex Variables',
+                'math.DG': 'Differential Geometry',
+                'math.FA': 'Functional Analysis',
+                'math.GM': 'General Mathematics',
+                'math.GN': 'General Topology',
+                'math.GR': 'Group Theory',
+                'math.GT': 'Geometric Topology',
+                'math.HO': 'History and Overview',
+                'math.IT': 'Information Theory',
+                'math.KT': 'K-Theory and Homology',
+                'math.LO': 'Logic',
+                'math.MG': 'Metric Geometry',
+                'math.MP': 'Mathematical Physics',
+                'math.OA': 'Operator Algebras',
+                'math.QA': 'Quantum Algebra',
+                'math.RA': 'Rings and Algebras',
+                'math.RT': 'Representation Theory',
+                'math.SG': 'Symplectic Geometry',
+                'math.SP': 'Spectral Theory'
+            },
+            physics: {
+                'physics.acc-ph': 'Accelerator Physics',
+                'physics.ao-ph': 'Atmospheric and Oceanic Physics',
+                'physics.atom-ph': 'Atomic Physics',
+                'physics.bio-ph': 'Biological Physics',
+                'physics.chem-ph': 'Chemical Physics',
+                'physics.comp-ph': 'Computational Physics',
+                'physics.data-an': 'Data Analysis',
+                'physics.flu-dyn': 'Fluid Dynamics',
+                'physics.gen-ph': 'General Physics',
+                'physics.geo-ph': 'Geophysics',
+                'physics.hist-ph': 'History and Philosophy of Physics',
+                'physics.ins-det': 'Instrumentation and Detectors',
+                'physics.med-ph': 'Medical Physics',
+                'physics.optics': 'Optics',
+                'physics.plasm-ph': 'Plasma Physics',
+                'physics.pop-ph': 'Popular Physics',
+                'physics.soc-ph': 'Physics and Society',
+                'physics.space-ph': 'Space Physics',
+                'physics.class-ph': 'Classical Physics',
+                'physics.ed-ph': 'Physics Education'
+            }
+        };
+        
+        // Update category dropdown when domain changes
+        document.getElementById('domain-select').addEventListener('change', function() {
+            const domain = this.value;
+            const categorySelect = document.getElementById('category-select');
+            
+            // Clear existing options
+            categorySelect.innerHTML = '<option value="all">All Categories</option>';
+            
+            if (domain !== 'all' && categoryMappings[domain]) {
+                Object.entries(categoryMappings[domain]).forEach(([code, name]) => {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = `${code} - ${name}`;
+                    categorySelect.appendChild(option);
+                });
+            }
+        });
+        
+        // Initialize category dropdown
+        document.getElementById('domain-select').dispatchEvent(new Event('change'));
+        
+        // Crawl new papers
+        document.getElementById('arxiv-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('DEBUG: Form submitted for crawling');
+            
+            const formData = new FormData(this);
+            const domain = formData.get('domain-select');
+            const category = formData.get('category-select');
+            const daysBack = parseInt(formData.get('days-back'));
+            
+            const targetName = category !== 'all' ? category : domain;
+            showProgress('crawl', `Crawling ${targetName} papers...`);
+            updateProgress('Connecting to arXiv API...', 0, 5);
+            
+            // Disable all buttons during processing
+            const crawlBtn = document.getElementById('crawl-btn');
+            const showBtn = document.getElementById('show-btn');
+            const statsBtn = document.getElementById('stats-btn');
+            
+            crawlBtn.disabled = true;
+            showBtn.disabled = true;
+            statsBtn.disabled = true;
+            crawlBtn.textContent = 'Crawling in Progress...';
+            
+            const enableButtons = () => {
+                crawlBtn.disabled = false;
+                showBtn.disabled = false;
+                statsBtn.disabled = false;
+                crawlBtn.textContent = 'Crawl arXiv Papers';
+            };
+            
+            try {
+                console.log('DEBUG: Sending crawl request:', { domain, category, daysBack });
+                
+                updateProgress('Searching papers...', 0, 15);
+                
+                const response = await fetch('http://localhost:8000/api/v1/crawl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        domain: domain,
+                        category: category !== 'all' ? category : null,
+                        days_back: daysBack
+                    })
+                });
+                
+                updateProgress('Processing papers (this may take a while)...', 0, 30);
+                
+                // Show estimated time based on domain
+                let estimatedTime = 'a few minutes';
+                if (category !== 'all') {
+                    estimatedTime = '1-2 minutes';
+                } else if (domain === 'all') {
+                    estimatedTime = '3-5 minutes';
+                } else {
+                    estimatedTime = '2-3 minutes';
+                }
+                
+                document.getElementById('status-text').textContent = `Processing papers (estimated time: ${estimatedTime})`;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('DEBUG: Crawl result:', result);
+                
+                updateProgress('Finalizing...', result.saved_count, 100);
+                
+                setTimeout(() => {
+                    hideProgress();
+                    
+                    const completionTime = Math.floor((Date.now() - startTime) / 1000);
+                    const statusMessage = result.saved_count > 0 
+                        ? `Found ${result.saved_count} new papers!` 
+                        : 'No new papers found (all papers already in database)';
+                    
+                    document.getElementById('error-message').innerHTML = `
+                        <div style="background: #d4edda; color: #155724; border-color: #c3e6cb;">
+                            <strong>✅ Crawling completed!</strong><br>
+                            ${statusMessage}<br>
+                            <small>Completed in ${completionTime} seconds • Domain: ${targetName}</small>
+                        </div>
+                    `;
+                    document.getElementById('error-message').style.display = 'block';
+                    
+                    // Re-enable all buttons
+                    enableButtons();
+                    
+                    // Auto-show recent papers after crawling if new papers were found
+                    if (result.saved_count > 0) {
+                        setTimeout(() => showRecentPapers(), 2000);
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('ERROR: Crawling failed:', error);
+                hideProgress();
+                
+                // Re-enable all buttons
+                enableButtons();
+                
+                showError('❌ Crawling failed: ' + error.message + '<br><small>Please check if the server is running (start_server.bat)</small>');
+            }
+        });
+        
+        // Show recent papers
+        document.getElementById('show-btn').addEventListener('click', showRecentPapers);
+        
+        async function showRecentPapers() {
+            console.log('DEBUG: Showing recent papers');
+            
+            const domain = document.getElementById('domain-select').value;
+            const category = document.getElementById('category-select').value;
+            const daysBack = parseInt(document.getElementById('days-back').value);
+            const maxResults = parseInt(document.getElementById('max-results').value);
+            
+            const targetName = category !== 'all' ? category : domain;
+            showProgress('load', `Loading ${targetName} papers...`);
+            updateProgress('Fetching papers from database...', 0, 20);
+            
+            try {
+                const url = new URL('http://localhost:8000/api/v1/papers');
+                url.searchParams.append('domain', domain);
+                url.searchParams.append('days_back', daysBack);
+                url.searchParams.append('limit', maxResults);
+                if (category !== 'all') {
+                    url.searchParams.append('category', category);
+                }
+                
+                console.log('DEBUG: Fetching papers from:', url.toString());
+                updateProgress('Processing results...', 0, 70);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const papers = await response.json();
+                console.log('DEBUG: Retrieved', papers.length, 'papers');
+                
+                collectedPapers = papers;
+                updateProgress('Displaying papers...', papers.length, 100);
+                
+                setTimeout(() => {
+                    hideProgress();
+                    displayPapers(papers);
+                }, 500);
+                
+            } catch (error) {
+                console.error('ERROR: Failed to load papers:', error);
+                hideProgress();
+                showError('❌ Failed to load papers: ' + error.message + '<br><small>Please check if the server is running</small>');
+            }
+        }
+        
+        // Show database stats
+        document.getElementById('stats-btn').addEventListener('click', async function() {
+            console.log('DEBUG: Showing database stats');
+            
+            showProgress('stats', 'Loading database statistics...');
+            updateProgress('Querying database...', 0, 50);
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/stats');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const stats = await response.json();
+                console.log('DEBUG: Stats:', stats);
+                
+                updateProgress('Preparing display...', stats.total_count, 100);
+                
+                setTimeout(() => {
+                    hideProgress();
+                    
+                    document.getElementById('stats-content').innerHTML = `
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 6px;">
+                            <h4>📊 Database Statistics</h4>
+                            <div style="margin: 15px 0;">
+                                <div style="font-size: 24px; font-weight: bold; color: #007bff;">
+                                    ${stats.total_count.toLocaleString()}
+                                </div>
+                                <div style="color: #6c757d;">Total Papers in Database</div>
+                            </div>
+                            <p style="margin-top: 10px; color: #495057;">
+                                📅 Last updated: ${new Date().toLocaleString()}<br>
+                                🕒 Data refreshed every crawl operation
+                            </p>
+                        </div>
+                    `;
+                    document.getElementById('stats-display').style.display = 'block';
+                }, 500);
+                
+            } catch (error) {
+                console.error('ERROR: Failed to load stats:', error);
+                hideProgress();
+                showError('❌ Failed to load stats: ' + error.message);
+            }
+        });
+        
+        function hideAllSections() {
+            document.getElementById('default-state').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('paper-list-view').style.display = 'none';
+            document.getElementById('stats-display').style.display = 'none';
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showError(message) {
+            document.getElementById('error-message').innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; border-color: #f5c6cb;">
+                    ${message}
+                </div>
+            `;
+            document.getElementById('error-message').style.display = 'block';
+        }
+
+        function displayPapers(papers) {
+            console.log('DEBUG: Displaying', papers.length, 'papers');
+            const paperList = document.getElementById('paper-list');
+            paperList.innerHTML = '';
+            
+            if (papers.length === 0) {
+                paperList.innerHTML = `
+                    <li style="padding: 40px; text-align: center; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">📄</div>
+                        <div style="font-size: 18px; margin-bottom: 10px;">No papers found</div>
+                        <div style="font-size: 14px; color: #999;">Try adjusting your search criteria or crawl new papers first</div>
+                    </li>
+                `;
+                document.getElementById('paper-list-view').style.display = 'block';
+                return;
+            }
+            
+            papers.forEach((paper, index) => {
+                const li = document.createElement('li');
+                li.className = 'paper-item';
+                li.style.cursor = 'pointer';
+                li.addEventListener('click', function() {
+                    console.log('DEBUG: Paper clicked:', paper.arxiv_id);
+                    localStorage.setItem('selectedPaper', JSON.stringify(paper));
+                    window.location.href = 'paper-summary.html';
+                });
+                
+                const authors = Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors;
+                const categories = Array.isArray(paper.categories) ? paper.categories.join(', ') : paper.categories;
+                
+                li.innerHTML = `
+                    <div class="paper-title">📋 ${paper.title}</div>
+                    <div class="paper-authors"><strong>👥 Authors:</strong> ${authors}</div>
+                    <div class="paper-authors"><strong>🏷️ Categories:</strong> ${categories}</div>
+                    <div class="paper-authors"><strong>🆔 arXiv ID:</strong> ${paper.arxiv_id} | <strong>📅 Published:</strong> ${new Date(paper.published_date).toLocaleDateString()}</div>
+                    <div class="paper-summary">${paper.abstract ? paper.abstract.substring(0, 300) + '...' : 'No abstract available'}</div>
+                    <div style="margin-top: 10px;"><a href="${paper.pdf_url}" target="_blank" style="color: #007bff; text-decoration: none;">📄 View PDF</a></div>
+                `;
+                paperList.appendChild(li);
+            });
+            
+            document.getElementById('paper-list-view').style.display = 'block';
+            document.getElementById('generate-summary').style.display = 'none';
+            
+            console.log('DEBUG: Papers displayed successfully');
+        }
+
+        // Future implementation for LLM integration
+        document.getElementById('generate-summary').addEventListener('click', async function() {
+            alert('AI Summary generation will be implemented in Phase 2 with LLM integration.');
+        });
+
+        document.getElementById('view-summaries').addEventListener('click', function() {
+            window.location.href = 'paper-summary.html';
+        });
+    </script>
+</body>
+</html>

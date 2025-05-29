@@ -1,0 +1,34 @@
+name: Daily Paper Collection
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect_papers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+      
+      - name: Collect and Process Papers
+        run: |
+          cd backend
+          python -c "
+from tasks.crawler import crawl_and_process_papers
+result = crawl_and_process_papers.delay('cs.AI', 100)
+print(f'Task initiated: {result.id}')
+"
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}

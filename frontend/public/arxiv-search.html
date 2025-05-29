@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>arXiv Search - Paper Discovery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            gap: 0;
+        }
+        
+        .nav-item {
+            position: relative;
+        }
+        
+        .nav-link {
+            display: block;
+            padding: 15px 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+        }
+        
+        .nav-link:hover {
+            color: #007bff;
+            background-color: #f8f9fa;
+        }
+        
+        .nav-link.active {
+            color: #007bff;
+            background-color: #e7f3ff;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .navbar-nav {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                display: none;
+            }
+            
+            .navbar-nav.active {
+                display: flex;
+            }
+            
+            .nav-link {
+                padding: 15px 20px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            background: white;
+            padding: 40px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 0;
+        }
+
+        .search-section {
+            max-width: 800px;
+            margin: 0 auto 40px auto;
+        }
+
+        .search-form {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .search-label {
+            display: block;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .search-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 18px 24px;
+            font-size: 18px;
+            border: 2px solid #e1e1e1;
+            border-radius: 50px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .search-input:focus {
+            border-color: #007bff;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #999;
+        }
+
+        .search-button {
+            display: block;
+            width: 200px;
+            margin: 0 auto;
+            padding: 15px 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 123, 255, 0.2);
+        }
+
+        .search-button:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+        }
+
+        .search-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e1e1e1;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 15px 24px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-text {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .suggestion-category {
+            font-size: 14px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .quick-links {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .quick-links-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .quick-link {
+            display: block;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            color: #007bff;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .quick-link:hover {
+            background: #007bff;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+        }
+
+        .footer-links {
+            text-align: center;
+            margin-top: auto;
+            padding-top: 40px;
+        }
+
+        .footer-link {
+            color: #666;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 14px;
+        }
+
+        .footer-link:hover {
+            color: #007bff;
+            text-decoration: underline;
+        }
+
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .search-tips {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .search-tips-title {
+            font-weight: 600;
+            color: #0056b3;
+            margin-bottom: 10px;
+        }
+
+        .search-tips-list {
+            list-style: none;
+            color: #0056b3;
+        }
+
+        .search-tips-list li {
+            margin-bottom: 5px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .search-tips-list li::before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+                margin-bottom: 40px;
+            }
+            
+            .logo {
+                font-size: 28px;
+            }
+            
+            .tagline {
+                font-size: 16px;
+            }
+            
+            .search-form {
+                padding: 30px 20px;
+            }
+            
+            .search-input {
+                font-size: 16px;
+                padding: 15px 20px;
+            }
+            
+            .search-button {
+                width: 100%;
+            }
+            
+            .links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="data-collection.html" class="navbar-brand">arXiv Manager</a>
+            
+            <ul class="navbar-nav" id="navbar-nav">
+                <li class="nav-item">
+                    <a href="data-collection.html" class="nav-link">📊 Collection</a>
+                </li>
+                <li class="nav-item">
+                    <a href="arxiv-search.html" class="nav-link active">🔍 Search</a>
+                </li>
+                <li class="nav-item">
+                    <a href="paper-summary.html" class="nav-link">📋 Summaries</a>
+                </li>
+            </ul>
+            
+            <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">arXiv Search</h1>
+            <p class="tagline">Discover academic papers with intelligent search</p>
+        </header>
+
+        <main class="search-section">
+            <form class="search-form" id="search-form" role="search" aria-label="Search arXiv papers">
+                <label for="search-query" class="search-label">
+                    What are you looking for?
+                </label>
+                
+                <div class="search-input-container">
+                    <input 
+                        type="text" 
+                        id="search-query" 
+                        name="query"
+                        class="search-input"
+                        placeholder="Enter keywords, authors, or paper titles..."
+                        aria-describedby="search-tips"
+                        autocomplete="off"
+                        required
+                    >
+                    
+                    <div class="suggestions" id="suggestions" role="listbox" aria-label="Search suggestions"></div>
+                </div>
+
+                <button type="submit" class="search-button" id="search-button">
+                    Search Papers
+                </button>
+
+                <div class="loading-indicator" id="loading-indicator">
+                    Searching arXiv database...
+                </div>
+            </form>
+
+            <div class="search-tips" id="search-tips">
+                <div class="search-tips-title">Search Tips:</div>
+                <ul class="search-tips-list">
+                    <li>Use quotes for exact phrases: "neural networks"</li>
+                    <li>Combine terms with AND/OR: machine learning AND computer vision</li>
+                    <li>Search by author: au:Smith</li>
+                    <li>Filter by category: cat:cs.AI</li>
+                </ul>
+            </div>
+        </main>
+
+        <section class="quick-links">
+            <h2 class="quick-links-title">Popular Categories</h2>
+            <div class="links-grid">
+                <a href="#" class="quick-link" data-category="cs.AI">Artificial Intelligence</a>
+                <a href="#" class="quick-link" data-category="cs.LG">Machine Learning</a>
+                <a href="#" class="quick-link" data-category="cs.CV">Computer Vision</a>
+                <a href="#" class="quick-link" data-category="cs.CL">Natural Language Processing</a>
+                <a href="#" class="quick-link" data-category="math.ST">Statistics Theory</a>
+                <a href="#" class="quick-link" data-category="physics.data-an">Data Analysis</a>
+            </div>
+        </section>
+
+        <footer class="footer-links">
+            <a href="data-collection.html" class="footer-link">Collection</a>
+            <a href="paper-summary.html" class="footer-link">Recent Papers</a>
+            <a href="#" class="footer-link">About</a>
+            <a href="#" class="footer-link">Help</a>
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+                const navbarNav = document.getElementById('navbar-nav');
+                navbarNav.classList.toggle('active');
+            });
+            
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-query');
+            const searchButton = document.getElementById('search-button');
+            const loadingIndicator = document.getElementById('loading-indicator');
+
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const query = searchInput.value.trim();
+                if (!query) {
+                    searchInput.focus();
+                    return;
+                }
+
+                searchButton.disabled = true;
+                loadingIndicator.style.display = 'block';
+                
+                console.log('DEBUG: Searching for:', query);
+                
+                setTimeout(() => {
+                    window.location.href = `arxiv-results.html?q=${encodeURIComponent(query)}`;
+                }, 500);
+            });
+
+            const quickLinks = document.querySelectorAll('.quick-link');
+            quickLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const category = this.dataset.category;
+                    searchInput.value = `cat:${category}`;
+                    searchForm.dispatchEvent(new Event('submit'));
+                });
+            });
+        });
+    </script>
+</body>
+</html>
