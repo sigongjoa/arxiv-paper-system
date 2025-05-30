@@ -10,3 +10,9 @@ aiofiles==23.2.1
 pytest==7.4.3
 httpx==0.25.2
 python-dateutil==2.8.2
+
+# Automation system dependencies
+boto3==1.34.0
+redis==5.0.1
+pyppeteer==1.0.2
+celery==5.3.4
