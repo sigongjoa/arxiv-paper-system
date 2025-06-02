@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperShorts 인증 테스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .auth-section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .auth-section:hover {
+            border-color: #4CAF50;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.1);
+        }
+
+        .auth-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+        }
+
+        .trust-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .badge-orcid { background: #A6CE39; color: white; }
+        .badge-doi { background: #0066CC; color: white; }
+        .badge-student { background: #FFB347; color: white; }
+        .badge-guest { background: #999; color: white; }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-orcid {
+            background: linear-gradient(135deg, #A6CE39 0%, #8DB700 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .comment-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .comment {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .comment-meta {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .filter-tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tab.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .filter-tab:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+
+        .filter-tab:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .navigation {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <a href="/" class="nav-btn">📚 게시판으로</a>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>📚 PaperShorts</h1>
+            <p>논문쇼츠 인증 기반 댓글 시스템 테스트</p>
+        </div>
+
+        <div class="content">
+            <!-- 로그인된 사용자 정보 -->
+            <div id="userInfo" class="user-info hidden">
+                <h3>로그인 정보</h3>
+                <div id="userDetails"></div>
+                <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+            </div>
+
+            <!-- 일반 로그인/회원가입 -->
+            <div id="authForms" class="auth-section">
+                <h2>🔐 일반 로그인 <span class="trust-badge badge-guest">GUEST</span></h2>
+                
+                <div style="display: flex; gap: 20px;">
+                    <!-- 로그인 폼 -->
+                    <div style="flex: 1;">
+                        <h4>로그인</h4>
+                        <div class="form-group">
+                            <label for="loginEmail">이메일</label>
+                            <input type="email" id="loginEmail" placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">비밀번호</label>
+                            <input type="password" id="loginPassword" placeholder="비밀번호">
+                        </div>
+                        <button class="btn" onclick="login()">로그인</button>
+                    </div>
+
+                    <!-- 회원가입 폼 -->
+                    <div style="flex: 1;">
+                        <h4>회원가입</h4>
+                        <div class="form-group">
+                            <label for="registerUsername">사용자명</label>
+                            <input type="text" id="registerUsername" placeholder="사용자명">
+                        </div>
+                        <div class="form-group">
+                            <label for="registerEmail">이메일</label>
+                            <input type="email" id="registerEmail" placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">비밀번호</label>
+                            <input type="password" id="registerPassword" placeholder="비밀번호">
+                        </div>
+                        <button class="btn" onclick="register()">회원가입</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORCID 인증 -->
+            <div class="auth-section">
+                <h2>🎓 ORCID 인증 <span class="trust-badge badge-orcid">ORCID</span></h2>
+                <p style="margin-bottom: 15px;">연구자 신원 확인을 위한 ORCID 계정으로 로그인하세요.</p>
+                <button class="btn btn-orcid" onclick="orcidLogin()">ORCID로 로그인</button>
+            </div>
+
+            <!-- 추가 인증 섹션 (로그인 후 표시) -->
+            <div id="additionalAuth" class="hidden">
+                <!-- DOI 인증 -->
+                <div class="auth-section">
+                    <h2>📄 DOI 저자 인증 <span class="trust-badge badge-doi">DOI</span></h2>
+                    <p style="margin-bottom: 15px;">발표한 논문의 DOI를 입력하여 저자 신원을 확인하세요.</p>
+                    <div class="form-group">
+                        <label for="doiInput">DOI (예: 10.1016/j.cell.2021.01.001)</label>
+                        <input type="text" id="doiInput" placeholder="10.xxxx/yyyyy">
+                    </div>
+                    <button class="btn" onclick="verifyDoi()">DOI 검증</button>
+                </div>
+
+                <!-- 학생 이메일 인증 -->
+                <div class="auth-section">
+                    <h2>🎒 학생 인증 <span class="trust-badge badge-student">STUDENT</span></h2>
+                    <p style="margin-bottom: 15px;">대학 이메일 (.ac.kr, .edu)로 학생 신원을 확인하세요.</p>
+                    <div class="form-group">
+                        <label for="studentEmail">대학 이메일</label>
+                        <input type="email" id="studentEmail" placeholder="student@university.ac.kr">
+                    </div>
+                    <button class="btn" onclick="sendStudentVerification()">인증 메일 발송</button>
+                </div>
+            </div>
+
+            <!-- 댓글 테스트 섹션 -->
+            <div id="commentSection" class="comment-section hidden">
+                <h2>💬 댓글 테스트</h2>
+                
+                <!-- 댓글 작성 -->
+                <div class="form-group">
+                    <label for="commentContent">댓글 내용</label>
+                    <textarea id="commentContent" placeholder="댓글을 입력하세요..."></textarea>
+                </div>
+                <button class="btn" onclick="postComment()">댓글 작성</button>
+
+                <!-- 댓글 필터 -->
+                <div class="filter-tabs">
+                    <div class="filter-tab active" onclick="filterComments('all')">전체 댓글</div>
+                    <div class="filter-tab" onclick="filterComments('verified_only')">인증된 댓글</div>
+                    <div class="filter-tab" onclick="filterComments('guest_only')">게스트 댓글</div>
+                </div>
+
+                <!-- 댓글 목록 -->
+                <div id="commentsList"></div>
+            </div>
+
+            <!-- 상태 메시지 -->
+            <div id="statusMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let currentUser = null;
+        let currentFilter = 'all';
+
+        // 페이지 로드 시 토큰 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadComments();
+            handleAuthCallbacks();
+        });
+
+        // URL에서 인증 콜백 처리
+        function handleAuthCallbacks() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const refresh = urlParams.get('refresh');
+            const error = urlParams.get('message');
+
+            if (token && refresh) {
+                localStorage.setItem('accessToken', token);
+                localStorage.setItem('refreshToken', refresh);
+                showStatus('ORCID 인증 성공!', 'success');
+                checkAuth();
+                // URL 정리
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else if (error) {
+                showStatus(error, 'error');
+                // URL 정리
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // 이메일 인증 토큰 확인
+            const emailToken = urlParams.get('token');
+            if (emailToken && window.location.pathname.includes('/auth/student/verify')) {
+                verifyEmailToken(emailToken);
+            }
+        }
+
+        // 인증 상태 확인
+        async function checkAuth() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                showGuestMode();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    showUserInfo(data.user);
+                } else {
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    showGuestMode();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showGuestMode();
+            }
+        }
+
+        function showUserInfo(user) {
+            document.getElementById('authForms').classList.add('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('additionalAuth').classList.remove('hidden');
+            document.getElementById('commentSection').classList.remove('hidden');
+
+            const badges = {
+                'ORCID': '<span class="trust-badge badge-orcid">ORCID 인증</span>',
+                'DOI': '<span class="trust-badge badge-doi">DOI 인증</span>',
+                'STUDENT': '<span class="trust-badge badge-student">학생 인증</span>',
+                'GUEST': '<span class="trust-badge badge-guest">게스트</span>'
+            };
+
+            document.getElementById('userDetails').innerHTML = `
+                <p><strong>사용자명:</strong> ${user.username} ${badges[user.trustLevel] || ''}</p>
+                <p><strong>이메일:</strong> ${user.email || 'N/A'}</p>
+                <p><strong>신뢰도 레벨:</strong> ${user.trustLevel}</p>
+                ${user.orcid ? `<p><strong>ORCID:</strong> ${user.orcid}</p>` : ''}
+                ${user.verifiedDetail ? `<p><strong>인증 정보:</strong> ${user.verifiedDetail}</p>` : ''}
+                <p><strong>가입일:</strong> ${new Date(user.createdAt).toLocaleString()}</p>
+            `;
+        }
+
+        function showGuestMode() {
+            document.getElementById('authForms').classList.remove('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('additionalAuth').classList.add('hidden');
+            document.getElementById('commentSection').classList.add('hidden');
+        }
+
+        // 로그인
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showStatus('이메일과 비밀번호를 입력하세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('accessToken', data.tokens.accessToken);
+                    localStorage.setItem('refreshToken', data.tokens.refreshToken);
+                    showStatus('로그인 성공!', 'success');
+                    checkAuth();
+                } else {
+                    showStatus(data.error || '로그인 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('네트워크 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 회원가입
+        async function register() {
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (!username || !email || !password) {
+                showStatus('모든 필드를 입력하세요.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('accessToken', data.tokens.accessToken);
+                    localStorage.setItem('refreshToken', data.tokens.refreshToken);
+                    showStatus('회원가입 성공!', 'success');
+                    checkAuth();
+                } else {
+                    showStatus(data.error || '회원가입 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('네트워크 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // ORCID 로그인
+        async function orcidLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/orcid/login`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    window.location.href = data.authUrl;
+                } else {
+                    showStatus('ORCID 인증 URL 생성 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('네트워크 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // DOI 검증
+        async function verifyDoi() {
+            const doi = document.getElementById('doiInput').value;
+            const token = localStorage.getItem('accessToken');
+
+            if (!doi) {
+                showStatus('DOI를 입력하세요.', 'error');
+                return;
+            }
+
+            if (!token) {
+                showStatus('로그인이 필요합니다.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/doi/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ doi })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('DOI 인증 성공!', 'success');
+                    checkAuth();
+                } else {
+                    showStatus(data.error || 'DOI 인증 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('네트워크 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 학생 이메일 인증 요청
+        async function sendStudentVerification() {
+            const email = document.getElementById('studentEmail').value;
+            const token = localStorage.getItem('accessToken');
+
+            if (!email) {
+                showStatus('대학 이메일을 입력하세요.', 'error');
+                return;
+            }
+
+            if (!token) {
+                showStatus('로그인이 필요합니다.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/student/email-request`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('인증 메일이 발송되었습니다. 이메일을 확인하세요.', 'success');
+                } else {
+                    showStatus(data.error || '인증 메일 발송 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('네트워크 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 이메일 토큰 검증
+        async function verifyEmailToken(token) {
+            try {
+                const response = await fetch(`${API_BASE}/auth/student/email-verify?token=${token}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('학생 이메일 인증 성공!', 'success');
+                    checkAuth();
+                } else {
+                    showStatus(data.error || '이메일 인증 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('네트워크 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 로그아웃
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            currentUser = null;
+            showGuestMode();
+            showStatus('로그아웃되었습니다.', 'info');
+        }
+
+        // 댓글 작성
+        async function postComment() {
+            const content = document.getElementById('commentContent').value;
+            const token = localStorage.getItem('accessToken');
+
+            if (!content.trim()) {
+                showStatus('댓글 내용을 입력하세요.', 'error');
+                return;
+            }
+
+            if (!token) {
+                showStatus('로그인이 필요합니다.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        post_id: 1, // 테스트용 게시글 ID
+                        content: content.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus(data.message, 'success');
+                    document.getElementById('commentContent').value = '';
+                    loadComments();
+                } else {
+                    showStatus(data.error || '댓글 작성 실패', 'error');
+                }
+            } catch (error) {
+                showStatus('네트워크 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 댓글 목록 로드
+        async function loadComments() {
+            try {
+                const response = await fetch(`${API_BASE}/comments/post/1?filter=${currentFilter}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayComments(data.comments);
+                } else {
+                    console.error('Failed to load comments:', data.error);
+                }
+            } catch (error) {
+                console.error('Network error loading comments:', error);
+            }
+        }
+
+        // 댓글 표시
+        function displayComments(comments) {
+            const commentsList = document.getElementById('commentsList');
+            
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<p style="text-align: center; color: #666;">댓글이 없습니다.</p>';
+                return;
+            }
+
+            const badges = {
+                'ORCID': '<span class="trust-badge badge-orcid">ORCID</span>',
+                'DOI': '<span class="trust-badge badge-doi">DOI</span>',
+                'STUDENT': '<span class="trust-badge badge-student">STUDENT</span>',
+                'GUEST': '<span class="trust-badge badge-guest">GUEST</span>'
+            };
+
+            commentsList.innerHTML = comments.map(comment => `
+                <div class="comment">
+                    <div class="comment-meta">
+                        <strong>${comment.username}</strong> 
+                        ${badges[comment.trust_level] || ''}
+                        <span style="margin-left: 10px; color: #999;">
+                            ${new Date(comment.created_at).toLocaleString()}
+                        </span>
+                        ${!comment.is_approved ? '<span style="color: #ff6b6b; margin-left: 10px;">(승인 대기)</span>' : ''}
+                    </div>
+                    <div>${comment.content}</div>
+                </div>
+            `).join('');
+        }
+
+        // 댓글 필터링
+        function filterComments(filter) {
+            currentFilter = filter;
+            
+            // 탭 활성화 상태 변경
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadComments();
+        }
+
+        // 상태 메시지 표시
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            // 3초 후 자동 숨김
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

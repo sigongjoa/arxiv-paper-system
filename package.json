@@ -1,0 +1,26 @@
+{
+  "name": "paper-shorts-auth",
+  "version": "1.0.0",
+  "description": "논문쇼츠 인증 기반 댓글 시스템",
+  "scripts": {
+    "install-all": "cd backend && npm install",
+    "build": "cd backend && npm run build",
+    "migrate": "cd backend && npm run migrate",
+    "dev": "cd backend && npm run dev",
+    "start": "cd backend && npm start",
+    "frontend": "cd frontend && python -m http.server 3000",
+    "setup": "npm run install-all && npm run build && npm run migrate up"
+  },
+  "keywords": [
+    "academic",
+    "authentication",
+    "comments",
+    "orcid",
+    "doi"
+  ],
+  "author": "PaperShorts Team",
+  "license": "MIT",
+  "dependencies": {
+    "sqlite3": "^5.1.7"
+  }
+}
