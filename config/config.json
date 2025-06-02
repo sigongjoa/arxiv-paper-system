@@ -1,0 +1,10 @@
+{
+  "AI_MODEL": "gpt-4",
+  "RESOLUTION": "1080x1920",
+  "FPS": "30",
+  "MAX_DURATION": "60",
+  "TTS_ENGINE": "edge-tts",
+  "VOICE": "en-US-AriaNeural",
+  "AUTO_UPLOAD": false,
+  "ADD_HASHTAGS": true
+}

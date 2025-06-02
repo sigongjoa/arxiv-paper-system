@@ -1,0 +1,46 @@
+            <div id="SettingsTab" class="tab-panel">
+                <div class="settings-section">
+                    <h3>API Settings</h3>
+                    <input type="password" id="OpenaiApiKey" placeholder="OpenAI API Key">
+                    <input type="password" id="AnthropicApiKey" placeholder="Anthropic API Key">
+                    
+                    <h3>Pipeline Settings</h3>
+                    <div class="setting-group">
+                        <label>TTS Voice:</label>
+                        <select id="TtsVoiceSelect">
+                            <option value="ko-KR-SunHiNeural">Korean Female (SunHi)</option>
+                            <option value="ko-KR-InJoonNeural">Korean Male (InJoon)</option>
+                            <option value="en-US-JennyNeural">English Female (Jenny)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label>Script Style:</label>
+                        <select id="ScriptStyleSelect">
+                            <option value="engaging">Engaging & Fun</option>
+                            <option value="academic">Academic Style</option>
+                            <option value="simple">Simple Explanation</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label>Visual Theme:</label>
+                        <select id="VisualThemeSelect">
+                            <option value="dark">Dark Theme</option>
+                            <option value="light">Light Theme</option>
+                            <option value="colorful">Colorful</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label>Video Duration:</label>
+                        <select id="VideoDurationSelect">
+                            <option value="60">60 seconds</option>
+                            <option value="30">30 seconds</option>
+                            <option value="90">90 seconds</option>
+                        </select>
+                    </div>
+                    
+                    <button id="SaveSettingsButton">Save Settings</button>
+                </div>
+            </div>

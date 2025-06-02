@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>arXiv to Shorts</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="static/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="MainContainer">
+        <header class="HeaderSection">
+            <h1>arXiv to Shorts</h1>
+            <div id="StatusIndicator" class="status-ready">● Ready</div>
+        </header>
+        
+        <nav class="TabNavigation">
+            <button class="tab-btn active" data-tab="HomeTab">🏠 Home</button>
+            <button class="tab-btn" data-tab="ProcessTab">⚙️ Process</button>
+            <button class="tab-btn" data-tab="PreviewTab">👁️ Preview</button>
+            <button class="tab-btn" data-tab="PublishTab">📤 Publish</button>
+            <button class="tab-btn" data-tab="SettingsTab">⚡ Settings</button>
+        </nav>
+        
+        <div class="TabContent">
+            <div id="HomeTab" class="tab-panel active">
+                <div class="InputSection">
+                    <label for="ArxivIdInput">arXiv Paper ID:</label>
+                    <input type="text" id="ArxivIdInput" placeholder="e.g., 2301.07041" value="2301.07041">
+                    <button id="ProcessButton" class="primary-btn">Process Paper</button>
+                    <div class="example-papers">
+                        <small>예시 논문 ID: 2301.07041, 2312.11805, 2403.15131</small>
+                    </div>
+                </div>
+                <div id="RecentPapers" class="recent-section">
+                    <h3>Recent Papers</h3>
+                    <div class="paper-list"></div>
+                </div>
+            </div>
+            
+            <div id="ProcessTab" class="tab-panel">
+                <div id="ProcessingStatus" class="process-status">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <div class="progress-text">0%</div>
+                    </div>
+                    
+                    <div id="ProcessingSteps" class="steps-list">
+                        <div class="step-item" data-step="script">
+                            <span class="step-icon">📝</span>
+                            <span class="step-text">Generating Script</span>
+                            <span class="step-status">pending</span>
+                        </div>
+                        <div class="step-item" data-step="visuals">
+                            <span class="step-icon">🎨</span>
+                            <span class="step-text">Creating Visuals</span>
+                            <span class="step-status">pending</span>
+                        </div>
+                        <div class="step-item" data-step="audio">
+                            <span class="step-icon">🔊</span>
+                            <span class="step-text">Generating Audio</span>
+                            <span class="step-status">pending</span>
+                        </div>
+                        <div class="step-item" data-step="video">
+                            <span class="step-icon">🎬</span>
+                            <span class="step-text">Composing Video</span>
+                            <span class="step-status">pending</span>
+                        </div>
+                    </div>
+                    
+                    <div id="ProcessingControls" class="processing-controls">
+                        <button id="PauseProcessButton" class="control-btn" disabled>Pause</button>
+                        <button id="StopProcessButton" class="control-btn" disabled>Stop</button>
+                        <button id="RetryProcessButton" class="control-btn" disabled>Retry</button>
+                        <button id="ClearLogButton" class="control-btn">Clear Log</button>
+                    </div>
+                </div>
+                
+                <div id="ProcessLogSection" class="log-section">
+                    <h3>Processing Log</h3>
+                    <div id="ProcessLog" class="log-container"></div>
+                </div>
+            </div>
+            
+            <div id="PreviewTab" class="tab-panel">
+                <div class="preview-section">
+                    <div class="video-selector">
+                        <label for="VideoSelect">Select Video:</label>
+                        <select id="VideoSelect">
+                            <option value="">No videos available</option>
+                        </select>
+                        <button id="RefreshVideosButton" class="control-btn">Refresh</button>
+                    </div>
+                    
+                    <div id="VideoPreview" class="video-preview">
+                        <video id="VideoPlayer" controls width="100%" style="display: none;">
+                            Your browser does not support video playback.
+                        </video>
+                        <div id="NoVideoMessage" class="no-video-message">
+                            Select a video to preview
+                        </div>
+                    </div>
+                    
+                    <div id="VideoInfo" class="video-info" style="display: none;">
+                        <div class="info-item">
+                            <span class="label">File:</span>
+                            <span id="VideoFilename">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Size:</span>
+                            <span id="VideoSize">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Created:</span>
+                            <span id="VideoCreated">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="PublishTab" class="tab-panel">
+                <div class="publish-container">
+                    <!-- Video Selection -->
+                    <div class="section VideoSelectionSection">
+                        <h3>📹 Select Video</h3>
+                        <div class="video-selector">
+                            <select id="PublishVideoSelect" class="video-dropdown">
+                                <option value="">Choose a video to upload...</option>
+                            </select>
+                            <button id="RefreshPublishVideos" class="refresh-btn">🔄 Refresh</button>
+                        </div>
+                        <div id="SelectedVideoPreview" class="video-preview-mini" style="display: none;">
+                            <video id="PreviewPlayer" controls width="300" height="169"></video>
+                        </div>
+                    </div>
+
+                    <!-- Platform Selection -->
+                    <div class="section PlatformSelectionSection">
+                        <h3>🎯 Choose Platforms</h3>
+                        <div class="platform-options">
+                            <label class="platform-checkbox">
+                                <input type="checkbox" id="YoutubeCheck" checked>
+                                <span class="platform-btn youtube">📺 YouTube Shorts</span>
+                            </label>
+                            <label class="platform-checkbox">
+                                <input type="checkbox" id="InstagramCheck">
+                                <span class="platform-btn instagram">📷 Instagram Reels</span>
+                            </label>
+                            <label class="platform-checkbox">
+                                <input type="checkbox" id="TiktokCheck">
+                                <span class="platform-btn tiktok">🎵 TikTok</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Video Metadata -->
+                    <div class="section MetadataSection">
+                        <h3>📝 Video Information</h3>
+                        
+                        <div class="metadata-form">
+                            <div class="form-group">
+                                <label for="VideoTitle">Title *</label>
+                                <input type="text" id="VideoTitle" maxlength="100" 
+                                       placeholder="Amazing Research Discovery! 🔬 #shorts">
+                                <div class="char-count">0/100</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="VideoDescription">Description</label>
+                                <textarea id="VideoDescription" rows="4" maxlength="5000"
+                                          placeholder="Check out this groundbreaking research! 🚀
+
+Paper: [arXiv link]
+
+#science #research #ai"></textarea>
+                                <div class="char-count">0/5000</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="VideoTags">Tags/Keywords</label>
+                                <input type="text" id="VideoTags" 
+                                       placeholder="#shorts #science #research #ai #machinelearning #arxiv">
+                                <small>Separate tags with spaces or commas</small>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="VideoCategory">Category</label>
+                                    <select id="VideoCategory">
+                                        <option value="27">Education</option>
+                                        <option value="28">Science & Technology</option>
+                                        <option value="22">People & Blogs</option>
+                                        <option value="25">News & Politics</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="VideoPrivacy">Privacy</label>
+                                    <select id="VideoPrivacy">
+                                        <option value="public">Public</option>
+                                        <option value="unlisted">Unlisted</option>
+                                        <option value="private">Private</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scheduling -->
+                    <div class="section SchedulingSection">
+                        <h3>⏰ Publishing Schedule</h3>
+                        <div class="schedule-options">
+                            <label class="schedule-radio">
+                                <input type="radio" name="publishSchedule" value="now" checked>
+                                <span>📤 Publish Now</span>
+                            </label>
+                            <label class="schedule-radio">
+                                <input type="radio" name="publishSchedule" value="later">
+                                <span>📅 Schedule for Later</span>
+                            </label>
+                        </div>
+                        <div id="ScheduleDateTime" class="schedule-inputs" style="display: none;">
+                            <input type="datetime-local" id="ScheduledTime">
+                        </div>
+                    </div>
+
+                    <!-- Upload Progress -->
+                    <div class="section UploadProgressSection" style="display: none;">
+                        <h3>📊 Upload Progress</h3>
+                        <div class="upload-progress">
+                            <div class="progress-item">
+                                <span class="platform-name">YouTube</span>
+                                <div class="progress-bar">
+                                    <div class="progress-fill youtube-progress"></div>
+                                </div>
+                                <span class="progress-status">Ready</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="section ActionSection">
+                        <button id="PublishButton" class="publish-btn">
+                            🚀 Publish Video
+                        </button>
+                        <button id="SaveDraftButton" class="draft-btn">
+                            💾 Save as Draft
+                        </button>
+                    </div>
+
+                    <!-- Upload History -->
+                    <div class="section HistorySection">
+                        <h3>📋 Upload History</h3>
+                        <div id="UploadHistory" class="history-container">
+                            <div class="history-item sample">
+                                <div class="history-info">
+                                    <div class="history-title">Sample Research Video</div>
+                                    <div class="history-meta">
+                                        <span class="history-date">2025-06-02 14:30</span>
+                                        <span class="history-platforms">YouTube</span>
+                                    </div>
+                                </div>
+                                <div class="history-status success">✅ Success</div>
+                            </div>
+                        </div>
+                        <button id="ClearHistoryButton" class="clear-btn">🗑️ Clear History</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="SettingsTab" class="tab-panel">
+                <div class="settings-section">
+                    <h3>API Settings</h3>
+                    <input type="password" id="OpenaiApiKey" placeholder="OpenAI API Key">
+                    <input type="password" id="AnthropicApiKey" placeholder="Anthropic API Key">
+                    
+                    <h3>Pipeline Settings</h3>
+                    <div class="setting-group">
+                        <label>TTS Voice:</label>
+                        <select id="TtsVoiceSelect">
+                            <option value="ko-KR-SunHiNeural">Korean Female (SunHi)</option>
+                            <option value="ko-KR-InJoonNeural">Korean Male (InJoon)</option>
+                            <option value="en-US-JennyNeural">English Female (Jenny)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label>Script Style:</label>
+                        <select id="ScriptStyleSelect">
+                            <option value="engaging">Engaging & Fun</option>
+                            <option value="academic">Academic Style</option>
+                            <option value="simple">Simple Explanation</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label>Visual Theme:</label>
+                        <select id="VisualThemeSelect">
+                            <option value="dark">Dark Theme</option>
+                            <option value="light">Light Theme</option>
+                            <option value="colorful">Colorful</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label>Video Duration:</label>
+                        <select id="VideoDurationSelect">
+                            <option value="60">60 seconds</option>
+                            <option value="30">30 seconds</option>
+                            <option value="90">90 seconds</option>
+                        </select>
+                    </div>
+                    
+                    <button id="SaveSettingsButton">Save Settings</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="StatusBar" class="status-bar">Ready to process arXiv papers</div>
+    </div>
+    
+    <script src="static/app.js"></script>
+</body>
+</html>

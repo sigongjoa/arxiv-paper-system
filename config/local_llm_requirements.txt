@@ -1,0 +1,8 @@
+torch==2.1.2
+vllm==0.3.3
+transformers==4.37.0
+fastapi==0.109.0
+uvicorn==0.27.0
+huggingface-hub==0.20.3
+accelerate==0.26.1
+requests==2.31.0

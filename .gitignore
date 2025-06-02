@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+.venv/
+venv/
+env/
+ENV/
+
+# API Keys & Credentials
+.env
+*.json
+!config.json
+!package*.json
+
+# YouTube API
+config/youtube_credentials.json
+config/youtube_token.json
+
+# Output Files
+output/
+*.mp4
+*.wav
+*.png
+*.jpg
+*.jpeg
+
+# Models & Cache
+models/
+.cache/
+downloads/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Dependencies
+node_modules/
