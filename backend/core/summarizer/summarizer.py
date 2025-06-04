@@ -22,6 +22,8 @@ class Summarizer:
             
             script = self.script_generator.generate_script(summary_data, paper_data)
             script['paper_id'] = paper_data.get('arxiv_id', 'unknown')
+            script['paper_title'] = paper_data.get('title', 'Unknown Paper')
+            script['arxiv_id'] = paper_data.get('arxiv_id', 'unknown')
             
             return script
             

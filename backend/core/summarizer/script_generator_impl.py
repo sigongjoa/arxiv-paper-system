@@ -1,57 +1,53 @@
 import sys
 import os
 
-# 프로젝트 루트를 sys.path에 추가
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
 from backend.lm_studio_client import LMStudioClient
 from backend.paper_analyzer import PaperAnalyzer
+from backend.core.shorts.hook_generator import HookGenerator
 import logging
 
 class ScriptGeneratorImpl:
     def __init__(self, base_url="http://127.0.0.1:1234"):
         self.client = LMStudioClient(base_url)
         self.analyzer = PaperAnalyzer()
+        self.hook_generator = HookGenerator()
         
     def generate_script(self, summary_data, paper_data):
-        try:
-            # 실제 논문 내용 추출
-            try:
-                pdf_stream = self.analyzer.download_pdf(paper_data['arxiv_id'])
-                full_text = self.analyzer.extract_pdf_text(pdf_stream)
-                
-                # 결론/결과 섹션 추출
-                results_section = self.analyzer.find_results_section(full_text)
-                
-                # 전체 내용과 결과를 합쳐 요약 데이터 생성
-                enhanced_summary = f"""
+        logging.info(f"ERROR 레벨: Generating mass-production shorts script for {paper_data.get('title', 'Unknown')}")
+        
+        if not paper_data or not summary_data:
+            raise ValueError("ERROR: Paper data and summary required for script generation")
+            
+        # 실제 논문 내용 추출 (필수)
+        pdf_stream = self.analyzer.download_pdf(paper_data['arxiv_id'])
+        full_text = self.analyzer.extract_pdf_text(pdf_stream)
+        results_section = self.analyzer.find_results_section(full_text)
+        
+        if not results_section:
+            raise ValueError(f"ERROR: Cannot extract results section from paper {paper_data['arxiv_id']}")
+            
+        # 양산형 쇼츠용 훅 생성
+        hook = self.hook_generator.generate(paper_data)
+        
+        # 60초 제한 엄격 적용
+        enhanced_summary = f"""
 제목: {paper_data['title']}
 요약: {summary_data}
-
-주요 결과:
-{results_section[:500]}
+주요 결과: {results_section[:500]}
 """
-                
-                logging.info(f"Using enhanced content with results section")
-                
-            except Exception as e:
-                logging.warning(f"Failed to get full content, using summary: {e}")
-                enhanced_summary = summary_data
+        
+        script_data = self.client.generate_shorts_script(enhanced_summary, paper_data, hook)
+        
+        # paper_id 추가 (고유 파일명 생성용)
+        script_data['paper_id'] = paper_data['arxiv_id']
+        
+        # 60초 초과 검증
+        total_duration = sum(scene.get('duration', 0) for scene in script_data.get('scenes', []))
+        if total_duration > 60:
+            raise ValueError(f"ERROR: Script duration {total_duration}s exceeds 60s limit")
             
-            return self.client.generate_script(enhanced_summary, paper_data)
-            
-        except Exception as e:
-            logging.error(f"Script generation error: {e}")
-            # 에러 시 기본 스크립트 반환
-            title = paper_data.get('title', 'Unknown Paper')[:40]
-            return {
-                "hook": f"새로운 연구 발견: {title}...",
-                "scenes": [
-                    {"text": f"오늘 소개할 논문은 '{title}' 입니다.", "duration": 10, "visual": "title_card"},
-                    {"text": "이 연구는 혁신적인 접근법을 제시합니다.", "duration": 15, "visual": "diagram"},
-                    {"text": "실험 결과는 놀라운 성능 향상을 보여줍니다.", "duration": 15, "visual": "chart"},
-                    {"text": "이 연구가 미래에 미칠 영향은 상당할 것입니다.", "duration": 15, "visual": "conclusion"}
-                ],
-                "cta": "더 많은 AI 연구 소식을 구독해주세요!"
-            }
+        logging.info(f"Generated unique shorts script: {paper_data['arxiv_id']} - {len(script_data.get('scenes', []))} scenes, {total_duration}s total")
+        return script_data

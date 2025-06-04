@@ -520,13 +520,25 @@ body {
 /* Platform Selection */
 .platform-options {
     display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.platform-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #2b2b2b;
+    border-radius: 8px;
+    border: 1px solid #555;
 }
 
 .platform-checkbox {
-    display: block;
+    display: flex;
+    align-items: center;
     cursor: pointer;
+    flex: 1;
 }
 
 .platform-checkbox input[type="checkbox"] {
@@ -535,16 +547,22 @@ body {
 
 .platform-checkbox .platform-btn {
     display: inline-block;
-    padding: 15px 25px;
+    padding: 12px 20px;
     border-radius: 8px;
     font-weight: bold;
     transition: all 0.3s ease;
     border: 2px solid transparent;
+    margin-right: 10px;
 }
 
 .platform-checkbox input[type="checkbox"]:checked + .platform-btn {
     border-color: #4CAF50;
     box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+}
+
+.platform-checkbox input[type="checkbox"]:disabled + .platform-btn {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .platform-btn.youtube {
@@ -557,6 +575,48 @@ body {
 
 .platform-btn.tiktok {
     background: linear-gradient(135deg, #000000, #333333);
+}
+
+.platform-status {
+    font-size: 18px;
+    margin-left: 10px;
+}
+
+.platform-status.connected {
+    color: #4CAF50;
+}
+
+.youtube-login-btn {
+    padding: 10px 20px;
+    background: #FF0000;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.youtube-login-btn:hover {
+    background: #CC0000;
+    transform: translateY(-1px);
+}
+
+.youtube-login-btn.connected {
+    background: #4CAF50;
+    cursor: default;
+}
+
+.youtube-login-btn.connected:hover {
+    background: #4CAF50;
+    transform: none;
+}
+
+.coming-soon {
+    color: #888;
+    font-style: italic;
+    font-size: 12px;
 }
 
 /* Metadata Form */
@@ -821,8 +881,10 @@ body {
         grid-template-columns: 1fr;
     }
     
-    .platform-options {
+    .platform-item {
         flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
     
     .schedule-options {

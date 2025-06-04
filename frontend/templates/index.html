@@ -139,18 +139,30 @@
                     <div class="section PlatformSelectionSection">
                         <h3>🎯 Choose Platforms</h3>
                         <div class="platform-options">
-                            <label class="platform-checkbox">
-                                <input type="checkbox" id="YoutubeCheck" checked>
-                                <span class="platform-btn youtube">📺 YouTube Shorts</span>
-                            </label>
-                            <label class="platform-checkbox">
-                                <input type="checkbox" id="InstagramCheck">
-                                <span class="platform-btn instagram">📷 Instagram Reels</span>
-                            </label>
-                            <label class="platform-checkbox">
-                                <input type="checkbox" id="TiktokCheck">
-                                <span class="platform-btn tiktok">🎵 TikTok</span>
-                            </label>
+                            <div class="platform-item">
+                                <label class="platform-checkbox">
+                                    <input type="checkbox" id="YoutubeCheck" disabled>
+                                    <span class="platform-btn youtube">📺 YouTube Shorts</span>
+                                    <span id="YoutubeStatusIcon" class="platform-status">⚠</span>
+                                </label>
+                                <button id="YoutubeLoginButton" class="youtube-login-btn">🔗 Connect YouTube</button>
+                            </div>
+                            <div class="platform-item">
+                                <label class="platform-checkbox">
+                                    <input type="checkbox" id="InstagramCheck" disabled>
+                                    <span class="platform-btn instagram">📷 Instagram Reels</span>
+                                    <span class="platform-status">🚧</span>
+                                </label>
+                                <small class="coming-soon">Coming Soon</small>
+                            </div>
+                            <div class="platform-item">
+                                <label class="platform-checkbox">
+                                    <input type="checkbox" id="TiktokCheck" disabled>
+                                    <span class="platform-btn tiktok">🎵 TikTok</span>
+                                    <span class="platform-status">🚧</span>
+                                </label>
+                                <small class="coming-soon">Coming Soon</small>
+                            </div>
                         </div>
                     </div>
 

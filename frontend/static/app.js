@@ -71,8 +71,16 @@ class ArxivToShortsWeb {
             this.clearUploadHistory();
         });
 
+        // YouTube authentication
+        document.getElementById('YoutubeLoginButton').addEventListener('click', () => {
+            this.loginToYoutube();
+        });
+
         // Load videos for publish tab
         this.loadPublishVideos();
+        
+        // Check YouTube auth status
+        this.checkYoutubeAuth();
         
         // Set default datetime
         const now = new Date();
@@ -183,6 +191,15 @@ class ArxivToShortsWeb {
         if (platforms.length === 0) {
             this.showError('Please select at least one platform');
             return false;
+        }
+        
+        // Check YouTube authentication
+        if (platforms.includes('youtube')) {
+            const youtubeStatus = document.getElementById('YoutubeStatusIcon');
+            if (!youtubeStatus.classList.contains('connected')) {
+                this.showError('Please connect to YouTube first');
+                return false;
+            }
         }
         
         return true;
@@ -425,6 +442,69 @@ class ArxivToShortsWeb {
                 </div>
             `;
             this.showSuccess('Upload history cleared');
+        }
+    }
+
+    async checkYoutubeAuth() {
+        try {
+            const response = await fetch('/api/youtube/status');
+            const result = await response.json();
+            this.updateYoutubeAuthUI(result.authenticated);
+        } catch (error) {
+            console.error('YouTube auth check failed:', error);
+            this.updateYoutubeAuthUI(false);
+        }
+    }
+
+    updateYoutubeAuthUI(isAuthenticated) {
+        const loginButton = document.getElementById('YoutubeLoginButton');
+        const statusIcon = document.getElementById('YoutubeStatusIcon');
+        const checkbox = document.getElementById('YoutubeCheck');
+        
+        if (isAuthenticated) {
+            loginButton.textContent = '✓ YouTube Connected';
+            loginButton.className = 'youtube-login-btn connected';
+            loginButton.disabled = true;
+            statusIcon.textContent = '✓';
+            statusIcon.className = 'platform-status connected';
+            checkbox.disabled = false;
+        } else {
+            loginButton.textContent = '🔗 Connect YouTube';
+            loginButton.className = 'youtube-login-btn';
+            loginButton.disabled = false;
+            statusIcon.textContent = '⚠';
+            statusIcon.className = 'platform-status';
+            checkbox.disabled = true;
+            checkbox.checked = false;
+        }
+    }
+
+    async loginToYoutube() {
+        try {
+            const response = await fetch('/api/youtube/auth');
+            const result = await response.json();
+            
+            if (result.auth_url) {
+                const popup = window.open(
+                    result.auth_url,
+                    'youtube_auth',
+                    'width=500,height=600,scrollbars=yes,resizable=yes'
+                );
+                
+                // Check if popup is closed
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        // Recheck auth status
+                        setTimeout(() => this.checkYoutubeAuth(), 1000);
+                    }
+                }, 1000);
+            } else {
+                this.showError('Failed to get YouTube authentication URL');
+            }
+        } catch (error) {
+            console.error('YouTube login error:', error);
+            this.showError('YouTube login failed: ' + error.message);
         }
     }
 

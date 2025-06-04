@@ -3,7 +3,6 @@ import os
 import logging
 import sys
 
-# 프로젝트 루트를 sys.path에 추가
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
@@ -23,61 +22,73 @@ class ChartGeneratorImpl:
         self.analyzer = PaperAnalyzer()
     
     def generate_performance_chart(self, paper_data, output_path):
-        fig, ax = plt.subplots(figsize=(10.8, 19.2))
-        fig.patch.set_facecolor('#1a1a1a')
-        ax.set_facecolor('#1a1a1a')
+        logging.info(f"ERROR 레벨: Generating 9:16 chart for {paper_data.get('title', 'Unknown')}")
         
-        try:
-            # 실제 논문에서 성능 데이터 추출
-            perf_data = self.analyzer.extract_performance_data(paper_data)
+        # 9:16 세로형 쇼츠 최적화 (1080x1920)
+        fig, ax = plt.subplots(figsize=(6, 10.67))  # 9:16 비율
+        fig.patch.set_facecolor('#000000')  # 완전한 검은색 배경
+        ax.set_facecolor('#000000')
+        
+        # 실제 논문에서 성능 데이터 추출 (필수)
+        perf_data = self.analyzer.extract_performance_data(paper_data)
+        
+        if not perf_data or not perf_data.get('has_valid_data'):
+            raise ValueError(f"ERROR: No performance data found in paper {paper_data.get('arxiv_id', 'Unknown')}")
             
-            if perf_data['has_valid_data']:
-                baseline = perf_data['baseline_performance']
-                proposed = perf_data['proposed_performance']
-                metric = perf_data['metric_name']
-                
-                values = [baseline, proposed]
-                title = f'{metric} 비교'
-                
-                logging.info(f"Using real data: {baseline} -> {proposed} ({metric})")
-            else:
-                # 실제 데이터를 찾지 못한 경우에만 기본값 사용
-                values = [75.0, 87.5]
-                title = '성능 비교 (추정)'
-                
-                logging.warning("No performance data found, using default values")
-                
-        except Exception as e:
-            logging.error(f"Failed to extract performance data: {e}")
-            values = [75.0, 87.5]
-            title = '성능 비교 (추정)'
+        baseline = perf_data['baseline_performance']
+        proposed = perf_data['proposed_performance']
+        metric = perf_data['metric_name']
         
-        methods = ['기존\n방법', '제안\n방법']
-        colors = ['#ff6b6b', '#4ecdc4']
+        if baseline is None or proposed is None:
+            raise ValueError(f"ERROR: Invalid performance values - baseline: {baseline}, proposed: {proposed}")
+            
+        values = [baseline, proposed]
+        methods = ['기존\\n방법', '제안\\n방법']
         
-        bars = ax.bar(methods, values, color=colors, alpha=0.8, width=0.6)
+        # 양산형 쇼츠용 시각적 개선
+        colors = ['#FF3366', '#00FF88']  # 고대비 네온 컬러
+        bars = ax.bar(methods, values, color=colors, alpha=0.9, width=0.5, 
+                     edgecolor='white', linewidth=3)
         
-        ax.set_ylabel('성능 (%)', color='white', fontsize=24, weight='bold')
-        ax.set_title(title, color='white', fontsize=28, weight='bold', pad=30)
-        ax.tick_params(colors='white', labelsize=20)
-        ax.spines['bottom'].set_color('white')
-        ax.spines['left'].set_color('white')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+        # 세로형 최적화: 상단에 제목 배치 
+        ax.set_title(f'{metric} 성능 비교', color='white', fontsize=32, 
+                    weight='bold', pad=40, y=0.95)
         
-        for bar, value in zip(bars, values):
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(values) * 0.02,
+        # 모바일 친화적 폰트 크기
+        ax.set_ylabel('성능 (%)', color='white', fontsize=28, weight='bold')
+        ax.tick_params(colors='white', labelsize=24, width=2)
+        
+        # 테두리 제거 (쇼츠 스타일)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        
+        # 값 표시 - 더 크고 명확하게
+        improvement = ((proposed - baseline) / baseline) * 100
+        for i, (bar, value) in enumerate(zip(bars, values)):
+            # 바 위에 값 표시
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(values) * 0.03,
                    f'{value:.1f}%', ha='center', va='bottom', 
-                   color='white', fontsize=22, weight='bold')
+                   color='white', fontsize=26, weight='bold',
+                   bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.8))
+            
+            # 개선율 표시 (두 번째 바에만)
+            if i == 1 and improvement > 0:
+                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height()/2,
+                       f'+{improvement:.1f}%\\n향상', ha='center', va='center',
+                       color='black', fontsize=20, weight='bold')
         
-        ax.set_ylim(0, max(values) * 1.2)
-        ax.grid(True, alpha=0.3, color='white', linestyle='--')
-        ax.set_axisbelow(True)
+        # 격자 제거 (깔끔한 쇼츠 스타일)
+        ax.grid(False)
+        ax.set_ylim(0, max(values) * 1.15)
+        
+        # 여백 최적화 (세로형)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.9, bottom=0.1)
         
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        plt.savefig(output_path, dpi=100, bbox_inches='tight',
-                   facecolor='#1a1a1a', edgecolor='none')
+        plt.savefig(output_path, dpi=150, bbox_inches='tight',
+                   facecolor='#000000', edgecolor='none')
         plt.close()
         
-        logging.info(f"Chart generated: {output_path}")
+        logging.info(f"Generated 9:16 chart: {output_path} ({baseline}% → {proposed}%, +{improvement:.1f}%)")
         return output_path

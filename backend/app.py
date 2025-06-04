@@ -21,7 +21,8 @@ from datetime import datetime
 from backend.processor import PaperProcessor
 from backend.core.pipeline import Pipeline
 from backend.log_stream import setup_log_capture, log_capture
-from backend.core.publisher.youtube_uploader import YouTubeUploader
+from backend.core.publisher.youtube_metadata import YouTubeMetadata
+from backend.core.publisher.youtube_auth_web import YouTubeAuthWeb
 
 # Flask 앱 설정 - frontend 폴더를 template/static으로 사용
 template_dir = os.path.join(project_root, 'frontend', 'templates')
@@ -60,35 +61,51 @@ def lm_studio_status():
 
 @app.route('/api/process', methods=['POST'])
 def process_paper():
+    arxiv_id = None
     try:
-        # LM Studio 연결 상태 확인
+        # LM Studio 연결 상태 확인 (필수)
         if not check_lm_studio():
-            return jsonify({
-                'error': 'LM Studio 서버에 연결할 수 없습니다',
-                'message': 'LM Studio를 실행하고 모델을 로드한 후 다시 시도해주세요',
-                'status': 'lm_studio_error'
-            }), 503
+            raise Exception('LM Studio 서버에 연결할 수 없습니다. 모델을 로드하고 다시 시도하세요.')
         
         data = request.get_json()
+        if not data or not data.get('arxiv_id'):
+            raise ValueError('arxiv_id 필수')
+            
         arxiv_id = data.get('arxiv_id')
         
         # 논문 데이터 가져오기
+        logging.info(f"ERROR 레벨: Starting mass-production processing for {arxiv_id}")
         paper_result = processor.process_arxiv_paper(arxiv_id)
         
         # 비디오 생성 파이프라인 실행
         video_result = pipeline.process_paper(arxiv_id, paper_result['paper'])
         
+        # 비디오 파일 생성 확인
+        if not video_result.get('video_paths') or not video_result['video_paths']:
+            raise Exception('비디오 파일이 생성되지 않았습니다.')
+            
+        # 생성된 비디오 파일 존재 확인
+        for video_path in video_result['video_paths']:
+            if not os.path.exists(video_path):
+                raise Exception(f'비디오 파일이 생성되지 않았습니다: {video_path}')
+        
+        logging.info(f"Mass-production complete for {arxiv_id}: {video_result.get('video_paths')}")
+        
         return jsonify({
             'paper': paper_result['paper'],
             'summary': paper_result['summary'],
             'videos': video_result,
-            'status': 'completed'
+            'status': 'completed',
+            'processing_time': video_result.get('processing_time', 0)
         })
+        
     except Exception as e:
-        logging.error(f"Process error: {e}")
+        error_msg = f"ERROR: Mass-production failed for {arxiv_id or 'unknown'}: {str(e)}"
+        logging.error(error_msg)
         return jsonify({
-            'error': str(e),
-            'status': 'error'
+            'error': error_msg,
+            'status': 'error',
+            'arxiv_id': arxiv_id
         }), 500
 
 @app.route('/api/publish', methods=['POST'])
@@ -189,15 +206,47 @@ def perform_upload(upload_id, data):
 def upload_to_youtube(video_path, data):
     """YouTube 업로드 실행"""
     try:
-        uploader = YouTubeUploader()
-        result = uploader.upload(
-            video_path=video_path,
+        auth = YouTubeAuthWeb()
+        if not auth.is_authenticated():
+            return {'status': 'error', 'message': 'YouTube authentication required'}
+        
+        service = auth.get_authenticated_service()
+        if not service:
+            return {'status': 'error', 'message': 'Failed to get YouTube service'}
+        
+        from backend.core.publisher.youtube_metadata import YouTubeMetadata
+        from googleapiclient.http import MediaFileUpload
+        
+        metadata_gen = YouTubeMetadata()
+        metadata = metadata_gen.create_metadata(
             title=data.get('title'),
             description=data.get('description'),
             tags=data.get('tags', '').split() if data.get('tags') else None
         )
-        logging.info(f"YouTube upload result: {result}")
-        return result
+        
+        media = MediaFileUpload(video_path, chunksize=-1, resumable=True)
+        request = service.videos().insert(
+            part=','.join(metadata.keys()),
+            body=metadata,
+            media_body=media
+        )
+        
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                logging.info(f"Upload progress: {int(status.progress() * 100)}%")
+        
+        if 'id' in response:
+            video_id = response['id']
+            return {
+                'status': 'success',
+                'video_id': video_id,
+                'url': f'https://youtube.com/watch?v={video_id}'
+            }
+        else:
+            return {'status': 'error', 'message': f'Upload failed: {response}'}
+            
     except Exception as e:
         logging.error(f"YouTube upload error: {e}")
         return {'status': 'error', 'message': str(e)}
@@ -209,6 +258,46 @@ def get_upload_status(upload_id):
         return jsonify({'error': 'Upload ID not found'}), 404
     
     return jsonify(upload_status[upload_id])
+
+@app.route('/api/youtube/auth')
+def youtube_auth():
+    """YouTube 인증 시작"""
+    try:
+        auth = YouTubeAuthWeb()
+        auth_url = auth.get_auth_url()
+        return jsonify({'auth_url': auth_url})
+    except Exception as e:
+        logging.error(f"YouTube auth error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/youtube/callback')
+def youtube_callback():
+    """YouTube OAuth 콜백"""
+    try:
+        code = request.args.get('code')
+        state = request.args.get('state')
+        
+        if not code:
+            return jsonify({'error': 'Authorization code missing'}), 400
+        
+        auth = YouTubeAuthWeb()
+        auth.handle_callback(code, state)
+        
+        return render_template('oauth_success.html')
+    except Exception as e:
+        logging.error(f"YouTube callback error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/youtube/status')
+def youtube_status():
+    """YouTube 인증 상태 확인"""
+    try:
+        auth = YouTubeAuthWeb()
+        is_authenticated = auth.is_authenticated()
+        return jsonify({'authenticated': is_authenticated})
+    except Exception as e:
+        logging.error(f"YouTube status error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/pipeline/settings', methods=['GET', 'POST'])
 def pipeline_settings():
@@ -258,31 +347,30 @@ def get_video(arxiv_id):
         
         # arxiv_id로 생성된 비디오 파일 찾기
         files = os.listdir(video_dir)
-        logging.info(f"Looking for video files in {video_dir}: {files}")
+        logging.info(f"Looking for video with ID '{arxiv_id}' in {video_dir}: {files}")
         
-        # 다양한 패턴으로 파일 찾기
-        clean_id = arxiv_id.replace('.', '_').replace('v', '_')
-        
+        # 논문 제목 기반 파일명 매칭
         for filename in files:
-            if filename.endswith('.mp4') and (clean_id in filename or arxiv_id in filename):
-                video_url = f'/output/videos/{filename}'
-                file_path = os.path.join(video_dir, filename)
-                file_size = os.path.getsize(file_path)
-                logging.info(f"Found video: {filename} (size: {file_size} bytes)")
-                return jsonify({
-                    'video_url': video_url, 
-                    'filename': filename,
-                    'size': file_size
-                })
+            if filename.endswith('.mp4'):
+                logging.info(f"Checking file: {filename}")
+                # arxiv_id가 파일명에 포함되어 있는지 확인
+                clean_arxiv_id = arxiv_id.replace('.', '_').replace('v', '_')
+                if clean_arxiv_id in filename or arxiv_id in filename:
+                    video_url = f'/output/videos/{filename}'
+                    file_path = os.path.join(video_dir, filename)
+                    file_size = os.path.getsize(file_path)
+                    logging.info(f"✓ Found video: {filename}")
+                    return jsonify({
+                        'video_url': video_url, 
+                        'filename': filename,
+                        'size': file_size
+                    })
         
-        return jsonify({
-            'error': 'Video not found', 
-            'searched_for': clean_id,
-            'available_files': files
-        }), 404
+        # 정확한 매칭만 허용 - 비디오 없으면 404 반환
+        return jsonify({'error': f"No video found for {arxiv_id}. Available files: {files}"}), 404
         
     except Exception as e:
-        logging.error(f"Video fetch error: {e}")
+        logging.error(f"ERROR 레벨: Video fetch error: {e}")
         return jsonify({'error': str(e)}), 500
 
 # 디버깅을 위한 파일 목록 조회
@@ -296,11 +384,124 @@ def debug_files():
             dir_path = os.path.join(project_root, 'output', subdir)
             if os.path.exists(dir_path):
                 files = os.listdir(dir_path)
-                result[subdir] = files
+                file_details = []
+                for f in files:
+                    file_path = os.path.join(dir_path, f)
+                    if os.path.isfile(file_path):
+                        file_details.append({
+                            'name': f,
+                            'size': os.path.getsize(file_path),
+                            'created': os.path.getctime(file_path)
+                        })
+                result[subdir] = {
+                    'count': len(file_details),
+                    'files': file_details
+                }
             else:
                 result[subdir] = 'Directory not found'
         
         return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 진단 및 빠른 테스트 API
+@app.route('/api/quick-test', methods=['POST'])
+def quick_test():
+    """단순 논문 데이터 가져오기 테스트"""
+    try:
+        data = request.get_json() or {}
+        arxiv_id = data.get('arxiv_id', '2301.07041')
+        
+        # 단순히 processor만 테스트
+        logging.info(f"Quick test for {arxiv_id}")
+        paper_result = processor.process_arxiv_paper(arxiv_id)
+        
+        return jsonify({
+            'status': 'success',
+            'paper': paper_result['paper'],
+            'message': 'arXiv API 연결 성공 - 논문 데이터 가져오기 완료'
+        })
+        
+    except Exception as e:
+        logging.error(f"Quick test error: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'message': 'arXiv API 연결 문제 또는 네트워크 오류'
+        }), 500
+
+# TTS 테스트 API
+@app.route('/api/test/create_video', methods=['POST'])
+def test_create_video():
+    """간단한 TTS 테스트"""
+    try:
+        data = request.get_json() or {}
+        test_text = data.get('text', '안녕하세요. 테스트 음성입니다.')
+        
+        # TTS 테스트
+        from backend.core.narrator.tts_engine import TTSEngine
+        import time
+        
+        tts = TTSEngine()
+        timestamp = int(time.time())
+        audio_path = os.path.join(project_root, 'output', 'audio', f'test_{timestamp}.wav')
+        
+        os.makedirs(os.path.dirname(audio_path), exist_ok=True)
+        
+        audio_file = tts.generate(test_text, audio_path)
+        
+        if os.path.exists(audio_file):
+            file_size = os.path.getsize(audio_file)
+            return jsonify({
+                'status': 'success',
+                'audio_file': audio_file,
+                'size': file_size,
+                'message': 'TTS 테스트 성공'
+            })
+        else:
+            return jsonify({'status': 'failed', 'message': 'Audio file not created'}), 500
+            
+    except Exception as e:
+        logging.error(f"TTS test error: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+# 시스템 상태 체크 API
+@app.route('/api/system/status')
+def system_status():
+    """시스템 전반 상태 체크"""
+    try:
+        status = {
+            'lm_studio': check_lm_studio(),
+            'directories': {},
+            'dependencies': {}
+        }
+        
+        # 디렉토리 체크
+        for subdir in ['videos', 'audio', 'visuals']:
+            dir_path = os.path.join(project_root, 'output', subdir)
+            status['directories'][subdir] = os.path.exists(dir_path)
+        
+        # 의존성 체크
+        try:
+            import edge_tts
+            status['dependencies']['edge_tts'] = True
+        except ImportError:
+            status['dependencies']['edge_tts'] = False
+            
+        try:
+            import moviepy
+            status['dependencies']['moviepy'] = True
+        except ImportError:
+            status['dependencies']['moviepy'] = False
+            
+        try:
+            import matplotlib
+            status['dependencies']['matplotlib'] = True
+        except ImportError:
+            status['dependencies']['matplotlib'] = False
+        
+        return jsonify(status)
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
