@@ -55,11 +55,10 @@ class VideoRenderer:
             audio_duration = audio_clip.duration
             visual_duration = visual['duration']
             
-            if abs(audio_duration - visual_duration) > 0.5:  # 0.5초 이상 차이나면 에러
-                raise ValueError(f"ERROR: Audio-visual sync error in scene {i}: audio={audio_duration}s, visual={visual_duration}s")
+            # 오디오 길이에 맞춰 비주얼 길이 자동 조정
+            sync_duration = audio_duration
+            visual['duration'] = sync_duration  # visual duration 업데이트
             
-            # 더 짧은 시간에 맞춤
-            sync_duration = min(audio_duration, visual_duration)
             img_clip = img_clip.set_duration(sync_duration)
             audio_clip = audio_clip.set_duration(sync_duration)
             
@@ -73,8 +72,8 @@ class VideoRenderer:
         if total_duration > 60.5:  # 0.5초 여유
             raise ValueError(f"ERROR: Total video duration {total_duration:.2f}s exceeds 60s limit")
         
-        if total_duration < 30:  # 너무 짧으면 에러
-            raise ValueError(f"ERROR: Total video duration {total_duration:.2f}s too short (minimum 30s)")
+        if total_duration < 15:  # 15초 미만이면 에러
+            raise ValueError(f"ERROR: Total video duration {total_duration:.2f}s too short (minimum 15s)")
         
         # 클립들 연결
         final_video = concatenate_videoclips(clips)

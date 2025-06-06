@@ -1,337 +1,674 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>arXiv to Shorts</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="static/styles.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArXiv to Shorts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .settings-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .settings-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            min-height: calc(100vh - 60px);
+        }
+        
+        .left-panel {
+            flex: 1;
+            padding: 20px;
+            border-right: 1px solid #e1e8ed;
+        }
+        
+        .right-panel {
+            flex: 1;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .input-section {
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .paper-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .paper-title {
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            word-wrap: break-word;
+        }
+        
+        .paper-meta {
+            margin-bottom: 15px;
+        }
+        
+        .meta-item {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .meta-label {
+            font-weight: 600;
+            color: #666;
+            display: inline-block;
+            min-width: 60px;
+        }
+        
+        .meta-value {
+            color: #333;
+        }
+        
+        .authors {
+            color: #495057;
+        }
+        
+        .arxiv-id {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #495057;
+        }
+        
+        .categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .category-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .hashtags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .hashtag {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .video-section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .video-player {
+            width: 100%;
+            aspect-ratio: 9/16;
+            max-width: 350px;
+            margin: 0 auto 20px auto;
+            display: block;
+            border-radius: 8px;
+            background: #000;
+        }
+        
+        .video-placeholder {
+            width: 100%;
+            aspect-ratio: 9/16;
+            max-width: 350px;
+            margin: 0 auto 20px auto;
+            background: #2c3e50;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .video-list {
+            margin-top: 30px;
+        }
+        
+        .video-list h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .video-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .video-item:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+        
+        .video-item-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .video-item-info {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            display: none;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .status-connected {
+            background: #4caf50;
+        }
+        
+        .status-disconnected {
+            background: #f44336;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .left-panel {
+                border-right: none;
+                border-bottom: 1px solid #e1e8ed;
+            }
+            
+            .right-panel {
+                background: white;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="MainContainer">
-        <header class="HeaderSection">
-            <h1>arXiv to Shorts</h1>
-            <div id="StatusIndicator" class="status-ready">● Ready</div>
-        </header>
-        
-        <nav class="TabNavigation">
-            <button class="tab-btn active" data-tab="HomeTab">🏠 Home</button>
-            <button class="tab-btn" data-tab="ProcessTab">⚙️ Process</button>
-            <button class="tab-btn" data-tab="PreviewTab">👁️ Preview</button>
-            <button class="tab-btn" data-tab="PublishTab">📤 Publish</button>
-            <button class="tab-btn" data-tab="SettingsTab">⚡ Settings</button>
-        </nav>
-        
-        <div class="TabContent">
-            <div id="HomeTab" class="tab-panel active">
-                <div class="InputSection">
-                    <label for="ArxivIdInput">arXiv Paper ID:</label>
-                    <input type="text" id="ArxivIdInput" placeholder="e.g., 2301.07041" value="2301.07041">
-                    <button id="ProcessButton" class="primary-btn">Process Paper</button>
-                    <div class="example-papers">
-                        <small>예시 논문 ID: 2301.07041, 2312.11805, 2403.15131</small>
-                    </div>
-                </div>
-                <div id="RecentPapers" class="recent-section">
-                    <h3>Recent Papers</h3>
-                    <div class="paper-list"></div>
-                </div>
-            </div>
-            
-            <div id="ProcessTab" class="tab-panel">
-                <div id="ProcessingStatus" class="process-status">
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress-fill"></div>
-                        </div>
-                        <div class="progress-text">0%</div>
-                    </div>
-                    
-                    <div id="ProcessingSteps" class="steps-list">
-                        <div class="step-item" data-step="script">
-                            <span class="step-icon">📝</span>
-                            <span class="step-text">Generating Script</span>
-                            <span class="step-status">pending</span>
-                        </div>
-                        <div class="step-item" data-step="visuals">
-                            <span class="step-icon">🎨</span>
-                            <span class="step-text">Creating Visuals</span>
-                            <span class="step-status">pending</span>
-                        </div>
-                        <div class="step-item" data-step="audio">
-                            <span class="step-icon">🔊</span>
-                            <span class="step-text">Generating Audio</span>
-                            <span class="step-status">pending</span>
-                        </div>
-                        <div class="step-item" data-step="video">
-                            <span class="step-icon">🎬</span>
-                            <span class="step-text">Composing Video</span>
-                            <span class="step-status">pending</span>
-                        </div>
-                    </div>
-                    
-                    <div id="ProcessingControls" class="processing-controls">
-                        <button id="PauseProcessButton" class="control-btn" disabled>Pause</button>
-                        <button id="StopProcessButton" class="control-btn" disabled>Stop</button>
-                        <button id="RetryProcessButton" class="control-btn" disabled>Retry</button>
-                        <button id="ClearLogButton" class="control-btn">Clear Log</button>
-                    </div>
-                </div>
-                
-                <div id="ProcessLogSection" class="log-section">
-                    <h3>Processing Log</h3>
-                    <div id="ProcessLog" class="log-container"></div>
-                </div>
-            </div>
-            
-            <div id="PreviewTab" class="tab-panel">
-                <div class="preview-section">
-                    <div class="video-selector">
-                        <label for="VideoSelect">Select Video:</label>
-                        <select id="VideoSelect">
-                            <option value="">No videos available</option>
-                        </select>
-                        <button id="RefreshVideosButton" class="control-btn">Refresh</button>
-                    </div>
-                    
-                    <div id="VideoPreview" class="video-preview">
-                        <video id="VideoPlayer" controls width="100%" style="display: none;">
-                            Your browser does not support video playback.
-                        </video>
-                        <div id="NoVideoMessage" class="no-video-message">
-                            Select a video to preview
-                        </div>
-                    </div>
-                    
-                    <div id="VideoInfo" class="video-info" style="display: none;">
-                        <div class="info-item">
-                            <span class="label">File:</span>
-                            <span id="VideoFilename">-</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Size:</span>
-                            <span id="VideoSize">-</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">Created:</span>
-                            <span id="VideoCreated">-</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="PublishTab" class="tab-panel">
-                <div class="publish-container">
-                    <!-- Video Selection -->
-                    <div class="section VideoSelectionSection">
-                        <h3>📹 Select Video</h3>
-                        <div class="video-selector">
-                            <select id="PublishVideoSelect" class="video-dropdown">
-                                <option value="">Choose a video to upload...</option>
-                            </select>
-                            <button id="RefreshPublishVideos" class="refresh-btn">🔄 Refresh</button>
-                        </div>
-                        <div id="SelectedVideoPreview" class="video-preview-mini" style="display: none;">
-                            <video id="PreviewPlayer" controls width="300" height="169"></video>
-                        </div>
-                    </div>
-
-                    <!-- Platform Selection -->
-                    <div class="section PlatformSelectionSection">
-                        <h3>🎯 Choose Platforms</h3>
-                        <div class="platform-options">
-                            <div class="platform-item">
-                                <label class="platform-checkbox">
-                                    <input type="checkbox" id="YoutubeCheck" disabled>
-                                    <span class="platform-btn youtube">📺 YouTube Shorts</span>
-                                    <span id="YoutubeStatusIcon" class="platform-status">⚠</span>
-                                </label>
-                                <button id="YoutubeLoginButton" class="youtube-login-btn">🔗 Connect YouTube</button>
-                            </div>
-                            <div class="platform-item">
-                                <label class="platform-checkbox">
-                                    <input type="checkbox" id="InstagramCheck" disabled>
-                                    <span class="platform-btn instagram">📷 Instagram Reels</span>
-                                    <span class="platform-status">🚧</span>
-                                </label>
-                                <small class="coming-soon">Coming Soon</small>
-                            </div>
-                            <div class="platform-item">
-                                <label class="platform-checkbox">
-                                    <input type="checkbox" id="TiktokCheck" disabled>
-                                    <span class="platform-btn tiktok">🎵 TikTok</span>
-                                    <span class="platform-status">🚧</span>
-                                </label>
-                                <small class="coming-soon">Coming Soon</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Video Metadata -->
-                    <div class="section MetadataSection">
-                        <h3>📝 Video Information</h3>
-                        
-                        <div class="metadata-form">
-                            <div class="form-group">
-                                <label for="VideoTitle">Title *</label>
-                                <input type="text" id="VideoTitle" maxlength="100" 
-                                       placeholder="Amazing Research Discovery! 🔬 #shorts">
-                                <div class="char-count">0/100</div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="VideoDescription">Description</label>
-                                <textarea id="VideoDescription" rows="4" maxlength="5000"
-                                          placeholder="Check out this groundbreaking research! 🚀
-
-Paper: [arXiv link]
-
-#science #research #ai"></textarea>
-                                <div class="char-count">0/5000</div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="VideoTags">Tags/Keywords</label>
-                                <input type="text" id="VideoTags" 
-                                       placeholder="#shorts #science #research #ai #machinelearning #arxiv">
-                                <small>Separate tags with spaces or commas</small>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="VideoCategory">Category</label>
-                                    <select id="VideoCategory">
-                                        <option value="27">Education</option>
-                                        <option value="28">Science & Technology</option>
-                                        <option value="22">People & Blogs</option>
-                                        <option value="25">News & Politics</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="VideoPrivacy">Privacy</label>
-                                    <select id="VideoPrivacy">
-                                        <option value="public">Public</option>
-                                        <option value="unlisted">Unlisted</option>
-                                        <option value="private">Private</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Scheduling -->
-                    <div class="section SchedulingSection">
-                        <h3>⏰ Publishing Schedule</h3>
-                        <div class="schedule-options">
-                            <label class="schedule-radio">
-                                <input type="radio" name="publishSchedule" value="now" checked>
-                                <span>📤 Publish Now</span>
-                            </label>
-                            <label class="schedule-radio">
-                                <input type="radio" name="publishSchedule" value="later">
-                                <span>📅 Schedule for Later</span>
-                            </label>
-                        </div>
-                        <div id="ScheduleDateTime" class="schedule-inputs" style="display: none;">
-                            <input type="datetime-local" id="ScheduledTime">
-                        </div>
-                    </div>
-
-                    <!-- Upload Progress -->
-                    <div class="section UploadProgressSection" style="display: none;">
-                        <h3>📊 Upload Progress</h3>
-                        <div class="upload-progress">
-                            <div class="progress-item">
-                                <span class="platform-name">YouTube</span>
-                                <div class="progress-bar">
-                                    <div class="progress-fill youtube-progress"></div>
-                                </div>
-                                <span class="progress-status">Ready</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="section ActionSection">
-                        <button id="PublishButton" class="publish-btn">
-                            🚀 Publish Video
-                        </button>
-                        <button id="SaveDraftButton" class="draft-btn">
-                            💾 Save as Draft
-                        </button>
-                    </div>
-
-                    <!-- Upload History -->
-                    <div class="section HistorySection">
-                        <h3>📋 Upload History</h3>
-                        <div id="UploadHistory" class="history-container">
-                            <div class="history-item sample">
-                                <div class="history-info">
-                                    <div class="history-title">Sample Research Video</div>
-                                    <div class="history-meta">
-                                        <span class="history-date">2025-06-02 14:30</span>
-                                        <span class="history-platforms">YouTube</span>
-                                    </div>
-                                </div>
-                                <div class="history-status success">✅ Success</div>
-                            </div>
-                        </div>
-                        <button id="ClearHistoryButton" class="clear-btn">🗑️ Clear History</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="SettingsTab" class="tab-panel">
-                <div class="settings-section">
-                    <h3>API Settings</h3>
-                    <input type="password" id="OpenaiApiKey" placeholder="OpenAI API Key">
-                    <input type="password" id="AnthropicApiKey" placeholder="Anthropic API Key">
-                    
-                    <h3>Pipeline Settings</h3>
-                    <div class="setting-group">
-                        <label>TTS Voice:</label>
-                        <select id="TtsVoiceSelect">
-                            <option value="ko-KR-SunHiNeural">Korean Female (SunHi)</option>
-                            <option value="ko-KR-InJoonNeural">Korean Male (InJoon)</option>
-                            <option value="en-US-JennyNeural">English Female (Jenny)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label>Script Style:</label>
-                        <select id="ScriptStyleSelect">
-                            <option value="engaging">Engaging & Fun</option>
-                            <option value="academic">Academic Style</option>
-                            <option value="simple">Simple Explanation</option>
-                        </select>
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label>Visual Theme:</label>
-                        <select id="VisualThemeSelect">
-                            <option value="dark">Dark Theme</option>
-                            <option value="light">Light Theme</option>
-                            <option value="colorful">Colorful</option>
-                        </select>
-                    </div>
-                    
-                    <div class="setting-group">
-                        <label>Video Duration:</label>
-                        <select id="VideoDurationSelect">
-                            <option value="60">60 seconds</option>
-                            <option value="30">30 seconds</option>
-                            <option value="90">90 seconds</option>
-                        </select>
-                    </div>
-                    
-                    <button id="SaveSettingsButton">Save Settings</button>
-                </div>
+    <div class="container">
+        <div class="header">
+            <h1>ArXiv to Shorts</h1>
+            <div class="header-controls">
+                <span id="status-indicator" class="status-indicator"></span>
+                <button class="settings-btn" onclick="window.open('/settings', '_blank')">⚙️ 설정</button>
             </div>
         </div>
         
-        <div id="StatusBar" class="status-bar">Ready to process arXiv papers</div>
+        <div class="main-content">
+            <!-- 왼쪽 패널: 논문 분석 -->
+            <div class="left-panel">
+                <div class="input-section">
+                    <div class="input-group">
+                        <label for="arxiv-id">ArXiv ID</label>
+                        <input type="text" id="arxiv-id" placeholder="예: 2301.07041 또는 arxiv:2301.07041" value="">
+                    </div>
+                    <button id="process-btn" class="btn">논문 분석하기</button>
+                </div>
+                
+                <div id="loading" class="loading">
+                    <p>논문 데이터를 가져오는 중...</p>
+                </div>
+                
+                <div id="error" class="error"></div>
+                
+                <div id="paper-card" class="paper-card">
+                    <div class="paper-title" id="paper-title"></div>
+                    
+                    <div class="paper-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">저자:</span>
+                            <span class="meta-value authors" id="paper-authors"></span>
+                        </div>
+                        
+                        <div class="meta-item">
+                            <span class="meta-label">ID:</span>
+                            <span class="meta-value arxiv-id" id="paper-id"></span>
+                        </div>
+                        
+                        <div class="meta-item">
+                            <span class="meta-label">분야:</span>
+                            <div class="categories" id="paper-categories"></div>
+                        </div>
+                        
+                        <div class="meta-item">
+                            <span class="meta-label">태그:</span>
+                            <div class="hashtags" id="paper-hashtags"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="generate-video-btn" class="btn">비디오 생성하기</button>
+                </div>
+            </div>
+            
+            <!-- 오른쪽 패널: 비디오 플레이어 -->
+            <div class="right-panel">
+                <div class="video-section">
+                    <h3>비디오 플레이어</h3>
+                    <div id="video-player">
+                        <div class="video-placeholder">
+                            비디오를 선택하거나<br>새로 생성하세요
+                        </div>
+                    </div>
+                    <div id="video-info"></div>
+                </div>
+                
+                <div class="video-list">
+                    <h3>비디오 목록</h3>
+                    <div id="videos-container">
+                        <p style="color: #666; text-align: center;">로딩중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <script src="static/app.js"></script>
+
+    <script>
+        let currentPaper = null;
+        
+        // 시스템 상태 확인
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/lm-studio/status');
+                const data = await response.json();
+                const indicator = document.getElementById('status-indicator');
+                
+                if (data.connected) {
+                    indicator.className = 'status-indicator status-connected';
+                } else {
+                    indicator.className = 'status-indicator status-disconnected';
+                }
+            } catch (error) {
+                document.getElementById('status-indicator').className = 'status-indicator status-disconnected';
+            }
+        }
+        
+        // 해시태그 생성 함수
+        function generateHashtags(categories, title) {
+            const hashtags = [];
+            
+            // 카테고리 기반 해시태그
+            const categoryMap = {
+                'cs.AI': ['#AI', '#인공지능'],
+                'cs.LG': ['#MachineLearning', '#머신러닝'],
+                'cs.CL': ['#NLP', '#자연어처리'],
+                'cs.CV': ['#ComputerVision', '#컴퓨터비전'],
+                'stat.ML': ['#Statistics', '#통계'],
+                'cs.IR': ['#InformationRetrieval', '#정보검색'],
+                'cs.DC': ['#DistributedComputing', '#분산컴퓨팅'],
+                'cs.NE': ['#NeuralNetworks', '#신경망']
+            };
+            
+            categories.forEach(cat => {
+                if (categoryMap[cat]) {
+                    hashtags.push(...categoryMap[cat]);
+                }
+            });
+            
+            // 기본 해시태그
+            hashtags.push('#ArXiv', '#연구논문', '#학술');
+            
+            // 제목 기반 키워드 추출 (간단한 버전)
+            const titleLower = title.toLowerCase();
+            if (titleLower.includes('deep')) hashtags.push('#DeepLearning');
+            if (titleLower.includes('neural')) hashtags.push('#Neural');
+            if (titleLower.includes('transformer')) hashtags.push('#Transformer');
+            if (titleLower.includes('attention')) hashtags.push('#Attention');
+            if (titleLower.includes('language')) hashtags.push('#Language');
+            if (titleLower.includes('vision')) hashtags.push('#Vision');
+            if (titleLower.includes('rag')) hashtags.push('#RAG');
+            if (titleLower.includes('llm')) hashtags.push('#LLM');
+            
+            // 중복 제거 및 최대 8개로 제한
+            return [...new Set(hashtags)].slice(0, 8);
+        }
+        
+        // 논문 데이터 표시
+        function displayPaper(paper) {
+            document.getElementById('paper-title').textContent = paper.title;
+            document.getElementById('paper-authors').textContent = paper.authors.join(', ');
+            document.getElementById('paper-id').textContent = paper.arxiv_id;
+            
+            // 카테고리 표시
+            const categoriesContainer = document.getElementById('paper-categories');
+            categoriesContainer.innerHTML = '';
+            paper.categories.forEach(category => {
+                const tag = document.createElement('span');
+                tag.className = 'category-tag';
+                tag.textContent = category;
+                categoriesContainer.appendChild(tag);
+            });
+            
+            // 해시태그 생성 및 표시
+            const hashtags = paper.hashtags || generateHashtags(paper.categories, paper.title);
+            const hashtagsContainer = document.getElementById('paper-hashtags');
+            hashtagsContainer.innerHTML = '';
+            hashtags.forEach(hashtag => {
+                const tag = document.createElement('span');
+                tag.className = 'hashtag';
+                tag.textContent = hashtag;
+                hashtagsContainer.appendChild(tag);
+            });
+            
+            document.getElementById('paper-card').style.display = 'block';
+        }
+        
+        // 에러 표시
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        // 로딩 상태
+        function setLoading(isLoading) {
+            document.getElementById('loading').style.display = isLoading ? 'block' : 'none';
+            document.getElementById('process-btn').disabled = isLoading;
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        // 논문 처리
+        async function processPaper() {
+            const arxivId = document.getElementById('arxiv-id').value.trim();
+            if (!arxivId) {
+                showError('ArXiv ID를 입력해주세요.');
+                return;
+            }
+            
+            setLoading(true);
+            document.getElementById('paper-card').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/quick-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ arxiv_id: arxivId })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentPaper = data.paper;
+                    displayPaper(data.paper);
+                } else {
+                    showError(data.error || '논문 데이터를 가져올 수 없습니다.');
+                }
+            } catch (error) {
+                showError('네트워크 오류가 발생했습니다.');
+                console.error('Error:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // 비디오 생성
+        async function generateVideo() {
+            if (!currentPaper) return;
+            
+            setLoading(true);
+            
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ arxiv_id: currentPaper.arxiv_id })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // 비디오 생성 완료 후 바로 새로고침
+                    setTimeout(async () => {
+                        await loadVideoList(); // 목록 먼저 새로고침
+                        showVideoResult(currentPaper.arxiv_id); // 그 다음 비디오 재생
+                    }, 500);
+                } else {
+                    showError(data.error || '비디오 생성 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                showError('비디오 생성 중 네트워크 오류가 발생했습니다.');
+                console.error('Error:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // 비디오 결과 표시
+        async function showVideoResult(arxivId) {
+            try {
+                const response = await fetch(`/api/video/${arxivId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    playVideo(data.video_url, data.filename, data.size);
+                }
+            } catch (error) {
+                console.error('비디오 로드 오류:', error);
+            }
+        }
+        
+        // 비디오 목록 로드 (강제 새로고침)
+        async function loadVideoList() {
+            try {
+                // 캐시 방지를 위한 타임스탬프 추가
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/videos?t=${timestamp}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayVideoList(data.videos);
+                }
+            } catch (error) {
+                console.error('비디오 목록 로드 오류:', error);
+            }
+        }
+        
+        // 비디오 목록 표시
+        function displayVideoList(videos) {
+            const container = document.getElementById('videos-container');
+            
+            if (videos.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center;">생성된 비디오가 없습니다.</p>';
+                return;
+            }
+            
+            container.innerHTML = videos.slice(0, 5).map(video => {
+                const date = new Date(video.created * 1000).toLocaleDateString('ko-KR');
+                return `
+                    <div class="video-item" onclick="playVideo('${video.url}', '${video.filename}', ${video.size})">
+                        <div class="video-item-title">${video.filename}</div>
+                        <div class="video-item-info">
+                            ${date} • ${(video.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 비디오 재생
+        function playVideo(url, filename, size) {
+            const videoPlayer = document.getElementById('video-player');
+            const videoInfo = document.getElementById('video-info');
+            
+            videoPlayer.innerHTML = `
+                <video class="video-player" controls autoplay>
+                    <source src="${url}" type="video/mp4">
+                    브라우저가 비디오를 지원하지 않습니다.
+                </video>
+            `;
+            
+            videoInfo.innerHTML = `
+                <p><strong>파일명:</strong> ${filename}</p>
+                <p><strong>크기:</strong> ${(size / 1024 / 1024).toFixed(2)} MB</p>
+            `;
+        }
+        
+        // 이벤트 리스너
+        document.getElementById('process-btn').addEventListener('click', processPaper);
+        document.getElementById('generate-video-btn').addEventListener('click', generateVideo);
+        
+        // Enter 키 처리
+        document.getElementById('arxiv-id').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processPaper();
+            }
+        });
+        
+        // 초기화
+        checkSystemStatus();
+        loadVideoList();
+        setInterval(checkSystemStatus, 30000); // 30초마다 상태 확인
+    </script>
 </body>
 </html>

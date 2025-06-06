@@ -1,53 +1,55 @@
 # Python
 __pycache__/
-*.py[cod]
-*.pyo
+*.pyc
 *.pyd
-.Python
 *.so
-.venv/
-venv/
+.Python
 env/
-ENV/
-
-# API Keys & Credentials
-.env
-*.json
-!config.json
-!package*.json
-
-# YouTube API
-config/youtube_credentials.json
-config/youtube_token.json
-
-# Output Files
-output/
-*.mp4
-*.wav
-*.png
-*.jpg
-*.jpeg
-
-# Models & Cache
-models/
-.cache/
-downloads/
-
-# Logs
-*.log
-logs/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.pytest_cache/
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+.mypy_cache/
+.dmypy.json
+.pytest_cache/
+.pytype/
+cython_debug/
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
+*.bak
 *.swo
-*~
+*.tmp
+*.log
 
-# OS
+# OS generated files
 .DS_Store
 Thumbs.db
-*.tmp
 
-# Dependencies
-node_modules/
+# Project specific
+output/
+*.backup
+.env
+test/
+templates/
+frontend/static/js/ 

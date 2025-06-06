@@ -26,9 +26,6 @@ class TTSEngine:
         if not text or not text.strip():
             raise ValueError("ERROR: Empty text provided for TTS generation")
             
-        if len(text) > 500:  # 쇼츠용 텍스트 길이 제한
-            raise ValueError(f"ERROR: Text too long for shorts ({len(text)} chars). Maximum 500 characters")
-            
         try:
             # 쇼츠 최적화 음성 설정
             communicate = edge_tts.Communicate(

@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')  # GUI 없는 백엔드 사용
 import matplotlib.pyplot as plt
 import os
 import logging
@@ -10,13 +12,37 @@ from backend.paper_analyzer import PaperAnalyzer
 
 class ChartGeneratorImpl:
     def __init__(self):
+        import os
+        import matplotlib.font_manager as fm
+        
+        # 한글 폰트 설정
+        font_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'backend', 'fonts')
+        korean_font_path = os.path.join(font_dir, 'NanumGothic.ttf')
+        
+        if not os.path.exists(korean_font_path):
+            korean_font_path = 'C:/Windows/Fonts/malgun.ttf'  # Windows 기본 한글 폰트
+        
         try:
-            plt.rcParams['font.family'] = 'Malgun Gothic'
-        except:
+            if os.path.exists(korean_font_path):
+                # 폰트 파일이 존재할 경우 등록
+                font_prop = fm.FontProperties(fname=korean_font_path)
+                plt.rcParams['font.family'] = font_prop.get_name()
+                logging.info(f"Chart font loaded from file: {korean_font_path}")
+            else:
+                raise FileNotFoundError("Font file not found")
+        except Exception as e:
+            logging.error(f"Chart font loading failed: {e}")
+            # 시스템 폰트 사용
             try:
-                plt.rcParams['font.family'] = 'NanumGothic'
+                plt.rcParams['font.family'] = 'Malgun Gothic'
+                logging.info("Using system font: Malgun Gothic")
             except:
-                plt.rcParams['font.family'] = 'DejaVu Sans'
+                try:
+                    plt.rcParams['font.family'] = 'NanumGothic'
+                    logging.info("Using system font: NanumGothic")
+                except:
+                    plt.rcParams['font.family'] = 'DejaVu Sans'
+                    logging.info("Using fallback font: DejaVu Sans")
         
         plt.rcParams['axes.unicode_minus'] = False
         self.analyzer = PaperAnalyzer()

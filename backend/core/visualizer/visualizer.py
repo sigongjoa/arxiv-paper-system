@@ -46,10 +46,18 @@ class Visualizer:
                         output_path
                     )
                 elif visual_type in ['chart', 'solution_chart', 'performance_chart']:
-                    visual_file = self.chart_generator.generate_performance_chart(
-                        paper_data,
-                        output_path
-                    )
+                    try:
+                        visual_file = self.chart_generator.generate_performance_chart(
+                            paper_data,
+                            output_path
+                        )
+                    except Exception as chart_error:
+                        logging.error(f"Chart generation failed, using title card: {chart_error}")
+                        visual_file = self.title_generator.generate(
+                            paper_data['title'][:50] + "...",
+                            scene['text'],
+                            output_path
+                        )
                 elif visual_type == 'diagram':
                     # 다이어그램 타입도 차트로 처리
                     visual_file = self.chart_generator.generate_performance_chart(

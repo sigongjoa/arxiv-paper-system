@@ -7,29 +7,15 @@ import logging
 
 # Pillow 10+ 호환성 패치
 if not hasattr(Image, 'ANTIALIAS'):
-    try:
-        Image.ANTIALIAS = Image.Resampling.LANCZOS
-        logging.info("Applied Pillow compatibility patch: ANTIALIAS -> Resampling.LANCZOS")
-    except AttributeError:
-        # 더 오래된 Pillow 버전의 경우
-        Image.ANTIALIAS = Image.LANCZOS
-        logging.info("Applied Pillow compatibility patch: ANTIALIAS -> LANCZOS")
+    Image.ANTIALIAS = Image.Resampling.LANCZOS
+    logging.info("Applied Pillow compatibility patch: ANTIALIAS -> Resampling.LANCZOS")
 
 # 추가 호환성 패치들
 if not hasattr(Image, 'BICUBIC'):
-    try:
-        Image.BICUBIC = Image.Resampling.BICUBIC
-    except AttributeError:
-        pass
+    Image.BICUBIC = Image.Resampling.BICUBIC
 
 if not hasattr(Image, 'BILINEAR'):
-    try:
-        Image.BILINEAR = Image.Resampling.BILINEAR  
-    except AttributeError:
-        pass
+    Image.BILINEAR = Image.Resampling.BILINEAR  
 
 if not hasattr(Image, 'NEAREST'):
-    try:
-        Image.NEAREST = Image.Resampling.NEAREST
-    except AttributeError:
-        pass
+    Image.NEAREST = Image.Resampling.NEAREST
