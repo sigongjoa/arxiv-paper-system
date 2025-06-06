@@ -1,0 +1,9 @@
+{
+  "smtpHost": "smtp.gmail.com",
+  "smtpPort": 587,
+  "smtpUser": "zeskywa499@gmail.com",
+  "smtpPassword": "tohx ojrx liof flml",
+  "fromEmail": "zeskyaw499@gmail.com",
+  "fromName": "관리자",
+  "testEmail": "zeskywa456@gmail.com"
+}

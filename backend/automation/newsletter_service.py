@@ -7,8 +7,8 @@ import os
 
 # 기존 시스템 import
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-from arxiv_crawler import ArxivCrawler
-from database import PaperDatabase
+from api.crawling.arxiv_crawler import ArxivCrawler
+from backend.core.paper_database import PaperDatabase
 from backend.core.llm_summarizer import LLMSummarizer
 
 from .email_service import EmailService
@@ -54,7 +54,7 @@ class NewsletterService:
             try:
                 # Paper 객체를 딕셔너리로 변환
                 paper_dict = {
-                    'arxiv_id': paper.arxiv_id,
+                    'arxiv_id': paper.paper_id,
                     'title': paper.title,
                     'abstract': paper.abstract,
                     'authors': paper.authors,
@@ -64,7 +64,7 @@ class NewsletterService:
                 }
                 
                 # LLM 요약 생성
-                logger.info(f"DEBUG: Generating summary for {paper.arxiv_id}")
+                logger.info(f"DEBUG: Generating summary for {paper.paper_id}")
                 summary = self.llm_summarizer.summarize_paper(paper_dict)
                 paper_dict['summary'] = summary
                 
@@ -75,7 +75,7 @@ class NewsletterService:
                 self.db.save_paper(paper)
                 
             except Exception as e:
-                logger.error(f"ERROR: Failed to process paper {paper.arxiv_id}: {str(e)}", exc_info=True)
+                logger.error(f"ERROR: Failed to process paper {paper.paper_id}: {str(e)}", exc_info=True)
                 continue
         
         logger.info(f"DEBUG: Collected and summarized {len(papers_with_summaries)} papers")
@@ -83,9 +83,12 @@ class NewsletterService:
     
     def create_daily_newsletter_task(self, 
                                    recipients: List[str],
-                                   categories: List[str] = ['cs.AI', 'cs.LG', 'cs.CL'],
+                                   categories: List[str] = None,
                                    config: Dict = None) -> str:
         """일일 뉴스레터 작업 생성"""
+        
+        if categories is None:
+            categories = ['all']  # 전체 검색
         
         # 어제 논문들 수집 및 요약
         papers = self.collect_and_summarize_papers(categories, days_back=1, max_papers=15)

@@ -1,0 +1,308 @@
+import logging
+from typing import Dict, Optional
+from datetime import datetime
+import json
+
+logger = logging.getLogger(__name__)
+
+class EnhancedNotionSaver:
+    def __init__(self, notion_manager=None):
+        from ..automation.notion_saver import NotionSaver
+        self.notion_saver = notion_manager or NotionSaver()
+        
+    async def save_enhanced_analysis(self, arxiv_id: str, analysis_data: Dict, analysis_type: str = "comprehensive") -> Dict:
+        """Save enhanced AI analysis to Notion with structured format"""
+        try:
+            logger.info(f"Saving enhanced {analysis_type} analysis to Notion for {arxiv_id}")
+            
+            # Create structured page title
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            page_title = f"Enhanced Analysis: {arxiv_id} - {analysis_type.title()} ({timestamp})"
+            
+            # Build page content based on analysis type
+            if analysis_type == "comprehensive":
+                content = self._build_comprehensive_content(analysis_data)
+            elif analysis_type == "methodology":
+                content = self._build_methodology_content(analysis_data)
+            elif analysis_type == "reproducibility":
+                content = self._build_reproducibility_content(analysis_data)
+            elif analysis_type == "research_gaps":
+                content = self._build_research_gaps_content(analysis_data)
+            else:
+                content = self._build_generic_content(analysis_data)
+            
+            # Save to Notion
+            result = self.notion_saver.save_to_notion(page_title, content)
+            
+            if result.get("success"):
+                logger.info(f"Enhanced analysis saved to Notion: {result.get('page_url')}")
+                return {
+                    "success": True,
+                    "page_url": result.get("page_url"),
+                    "page_id": result.get("page_id"),
+                    "analysis_type": analysis_type,
+                    "arxiv_id": arxiv_id,
+                    "saved_at": datetime.now().isoformat()
+                }
+            else:
+                logger.error(f"Failed to save to Notion: {result.get('error')}")
+                return {"success": False, "error": result.get("error")}
+                
+        except Exception as e:
+            logger.error(f"Enhanced Notion save failed for {arxiv_id}: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def _build_comprehensive_content(self, data: Dict) -> str:
+        """Build content for comprehensive analysis"""
+        content = []
+        
+        # Header with metadata
+        content.append("# 📊 종합 논문 분석 보고서\n")
+        content.append(f"**분석 일시:** {data.get('analysis_timestamp', 'N/A')}\n")
+        content.append(f"**분석 모델:** {data.get('model_used', 'N/A')}\n")
+        content.append(f"**ArXiv ID:** {data.get('arxiv_id', 'N/A')}\n\n")
+        
+        # Executive Summary
+        if 'comprehensive_analysis' in data and 'background' in data['comprehensive_analysis']:
+            bg = data['comprehensive_analysis']['background']
+            content.append("## 🎯 연구 배경 및 문제 정의\n")
+            content.append(f"**문제 정의:** {bg.get('problem_definition', 'N/A')}\n\n")
+            content.append(f"**연구 동기:** {bg.get('motivation', 'N/A')}\n\n")
+        
+        # Methodology Analysis
+        if 'methodology_details' in data:
+            method = data['methodology_details']
+            content.append("## 🔬 방법론 분석\n")
+            content.append(f"**방법론 유형:** {method.get('methodology_type', 'N/A')}\n\n")
+            
+            if 'core_algorithms' in method:
+                content.append("**핵심 알고리즘:**\n")
+                for algo in method['core_algorithms']:
+                    content.append(f"- {algo}\n")
+                content.append("\n")
+        
+        # Quality Assessment
+        if 'comprehensive_analysis' in data and 'quality_scores' in data['comprehensive_analysis']:
+            scores = data['comprehensive_analysis']['quality_scores']
+            content.append("## ⭐ 품질 평가\n")
+            content.append("| 평가 항목 | 점수 |\n")
+            content.append("|----------|------|\n")
+            for key, value in scores.items():
+                if isinstance(value, (int, float)):
+                    content.append(f"| {key} | {value}/100 |\n")
+            content.append("\n")
+        
+        # Reproducibility Assessment
+        if 'reproducibility_assessment' in data:
+            repro = data['reproducibility_assessment']
+            content.append("## 🔄 재현가능성 평가\n")
+            
+            if 'reproducibility_score' in repro:
+                content.append("**재현성 점수:**\n")
+                for key, value in repro['reproducibility_score'].items():
+                    if isinstance(value, (int, float)):
+                        content.append(f"- {key}: {value}\n")
+                content.append("\n")
+            
+            if 'missing_elements' in repro:
+                content.append("**개선 필요 사항:**\n")
+                for element in repro['missing_elements']:
+                    content.append(f"- {element}\n")
+                content.append("\n")
+        
+        # Future Directions
+        if 'comprehensive_analysis' in data and 'future_directions' in data['comprehensive_analysis']:
+            content.append("## 🚀 향후 연구 방향\n")
+            for direction in data['comprehensive_analysis']['future_directions']:
+                content.append(f"- {direction}\n")
+            content.append("\n")
+        
+        # Technical Details (JSON format for reference)
+        content.append("## 📋 상세 분석 데이터\n")
+        content.append("```json\n")
+        content.append(json.dumps(data, indent=2, ensure_ascii=False))
+        content.append("\n```\n")
+        
+        return "".join(content)
+    
+    def _build_methodology_content(self, data: Dict) -> str:
+        """Build content for methodology analysis"""
+        content = []
+        
+        content.append("# 🔬 방법론 상세 분석\n\n")
+        content.append(f"**분석 일시:** {data.get('extracted_at', 'N/A')}\n\n")
+        
+        if 'methodology_type' in data:
+            content.append(f"**방법론 유형:** {data['methodology_type']}\n\n")
+        
+        if 'core_algorithms' in data:
+            content.append("## 핵심 알고리즘\n")
+            for algo in data['core_algorithms']:
+                content.append(f"- {algo}\n")
+            content.append("\n")
+        
+        if 'computational_complexity' in data:
+            comp = data['computational_complexity']
+            content.append("## 계산 복잡도\n")
+            content.append(f"- **시간 복잡도:** {comp.get('time_complexity', 'N/A')}\n")
+            content.append(f"- **공간 복잡도:** {comp.get('space_complexity', 'N/A')}\n")
+            content.append(f"- **하드웨어 요구사항:** {comp.get('hardware_requirements', 'N/A')}\n\n")
+        
+        # Add full data
+        content.append("## 상세 데이터\n")
+        content.append("```json\n")
+        content.append(json.dumps(data, indent=2, ensure_ascii=False))
+        content.append("\n```\n")
+        
+        return "".join(content)
+    
+    def _build_reproducibility_content(self, data: Dict) -> str:
+        """Build content for reproducibility assessment"""
+        content = []
+        
+        content.append("# 🔄 재현가능성 평가 보고서\n\n")
+        content.append(f"**평가 일시:** {data.get('assessed_at', 'N/A')}\n\n")
+        
+        if 'reproducibility_score' in data:
+            content.append("## 재현성 점수\n")
+            content.append("| 평가 항목 | 점수 |\n")
+            content.append("|----------|------|\n")
+            for key, value in data['reproducibility_score'].items():
+                if isinstance(value, (int, float)):
+                    content.append(f"| {key} | {value} |\n")
+            content.append("\n")
+        
+        if 'reproducibility_checklist' in data:
+            content.append("## 재현성 체크리스트\n")
+            for key, value in data['reproducibility_checklist'].items():
+                status = "✅" if value else "❌"
+                content.append(f"- {status} {key}: {value}\n")
+            content.append("\n")
+        
+        if 'recommendations_for_improvement' in data:
+            content.append("## 개선 권장사항\n")
+            for rec in data['recommendations_for_improvement']:
+                content.append(f"- {rec}\n")
+            content.append("\n")
+        
+        content.append("## 상세 데이터\n")
+        content.append("```json\n")
+        content.append(json.dumps(data, indent=2, ensure_ascii=False))
+        content.append("\n```\n")
+        
+        return "".join(content)
+    
+    def _build_research_gaps_content(self, data: Dict) -> str:
+        """Build content for research gaps analysis"""
+        content = []
+        
+        content.append("# 🔍 연구 공백 및 기회 분석\n\n")
+        content.append(f"**분석 일시:** {data.get('identified_at', 'N/A')}\n\n")
+        
+        if 'identified_gaps' in data:
+            gaps = data['identified_gaps']
+            content.append("## 식별된 연구 공백\n")
+            
+            for gap_type, gap_list in gaps.items():
+                content.append(f"### {gap_type}\n")
+                for gap in gap_list:
+                    content.append(f"- {gap}\n")
+                content.append("\n")
+        
+        if 'research_opportunities' in data:
+            opportunities = data['research_opportunities']
+            content.append("## 연구 기회\n")
+            
+            for opp_type, opp_list in opportunities.items():
+                content.append(f"### {opp_type}\n")
+                for opp in opp_list:
+                    content.append(f"- {opp}\n")
+                content.append("\n")
+        
+        if 'recommended_next_steps' in data:
+            content.append("## 권장 다음 단계\n")
+            for step in data['recommended_next_steps']:
+                content.append(f"- {step}\n")
+            content.append("\n")
+        
+        content.append("## 상세 데이터\n")
+        content.append("```json\n")
+        content.append(json.dumps(data, indent=2, ensure_ascii=False))
+        content.append("\n```\n")
+        
+        return "".join(content)
+    
+    def _build_generic_content(self, data: Dict) -> str:
+        """Build generic content for any analysis type"""
+        content = []
+        
+        content.append("# 📋 AI 분석 결과\n\n")
+        content.append(f"**분석 일시:** {datetime.now().isoformat()}\n\n")
+        
+        content.append("## 분석 결과\n")
+        content.append("```json\n")
+        content.append(json.dumps(data, indent=2, ensure_ascii=False))
+        content.append("\n```\n")
+        
+        return "".join(content)
+    
+    async def save_citation_analysis(self, arxiv_id: str, citation_data: Dict) -> Dict:
+        """Save citation analysis to Notion"""
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            page_title = f"Citation Analysis: {arxiv_id} ({timestamp})"
+            
+            content = []
+            content.append("# 🔗 인용 관계 분석 보고서\n\n")
+            content.append(f"**분석 일시:** {citation_data.get('analysis_timestamp', 'N/A')}\n")
+            content.append(f"**논문 ID:** {arxiv_id}\n")
+            content.append(f"**총 인용 수:** {citation_data.get('total_citations', 0)}\n\n")
+            
+            if 'pattern_summary' in citation_data:
+                summary = citation_data['pattern_summary']
+                content.append("## 📊 인용 패턴 요약\n")
+                
+                if 'citation_patterns' in summary:
+                    patterns = summary['citation_patterns']
+                    content.append(f"**주요 인용 목적:** {patterns.get('primary_citation_purpose', 'N/A')}\n")
+                    content.append(f"**지배적 관계 유형:** {patterns.get('dominant_relationship_type', 'N/A')}\n\n")
+                
+                if 'citation_quality' in summary:
+                    quality = summary['citation_quality']
+                    content.append(f"**평균 관련성:** {quality.get('average_relevance', 'N/A')}\n")
+                    content.append(f"**인용 깊이:** {quality.get('citation_depth', 'N/A')}\n\n")
+            
+            if 'classifications' in citation_data:
+                content.append("## 📋 인용 분류 결과\n")
+                content.append("| 인용 논문 | 관계 유형 | 관련성 점수 | 영향력 |\n")
+                content.append("|----------|----------|------------|--------|\n")
+                
+                for classification in citation_data['classifications'][:10]:  # Top 10
+                    paper_id = classification.get('cited_paper_id', 'N/A')
+                    rel_type = classification.get('relationship_type', 'N/A')
+                    relevance = classification.get('relevance_score', 'N/A')
+                    influence = classification.get('influence_level', {}).get('overall_influence', 'N/A')
+                    content.append(f"| {paper_id} | {rel_type} | {relevance} | {influence} |\n")
+                content.append("\n")
+            
+            content.append("## 📄 상세 분석 데이터\n")
+            content.append("```json\n")
+            content.append(json.dumps(citation_data, indent=2, ensure_ascii=False))
+            content.append("\n```\n")
+            
+            result = self.notion_saver.save_to_notion(page_title, "".join(content))
+            
+            if result.get("success"):
+                return {
+                    "success": True,
+                    "page_url": result.get("page_url"),
+                    "page_id": result.get("page_id"),
+                    "arxiv_id": arxiv_id,
+                    "saved_at": datetime.now().isoformat()
+                }
+            else:
+                return {"success": False, "error": result.get("error")}
+                
+        except Exception as e:
+            logger.error(f"Citation analysis Notion save failed for {arxiv_id}: {e}")
+            return {"success": False, "error": str(e)}

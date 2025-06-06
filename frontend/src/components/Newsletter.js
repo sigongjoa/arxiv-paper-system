@@ -1,57 +1,76 @@
 import React, { useState } from 'react';
+import { newsletterAPI } from '../utils/api';
 
 const Newsletter = () => {
   const [config, setConfig] = useState({
     recipients: '',
-    senderEmail: '',
-    domain: 'cs',
-    period: 7,
-    maxPapers: 10,
-    subject: 'arXiv Newsletter',
-    template: 'basic'
+    sender_email: '',
+    domain: 'computer',
+    days_back: 1,
+    max_papers: 10,
+    title: 'arXiv Newsletter'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const templates = [
-    { id: 'basic', name: '기본 레이아웃', description: '간단하고 깔끔한 디자인' },
-    { id: 'modern', name: '모던 레이아웃', description: '시각적 카테고리와 AI 인사이트' },
-    { id: 'academic', name: '학술 레이아웃', description: '인용과 상세 메타데이터' }
-  ];
+  const parseRecipients = (recipientString) => {
+    return recipientString.split(',').map(email => email.trim()).filter(email => email);
+  };
 
   const handleGenerate = async () => {
+    const recipientList = parseRecipients(config.recipients);
+    if (recipientList.length === 0) {
+      setError('수신자 이메일을 입력하세요.');
+      return;
+    }
+    if (!config.sender_email) {
+      setError('발신자 이메일을 입력하세요.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch('/api/newsletter/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+      const response = await newsletterAPI.create({
+        ...config,
+        recipients: recipientList
       });
-      if (!response.ok) throw new Error('뉴스레터 생성 실패');
-      alert('뉴스레터가 성공적으로 전송되었습니다.');
-      setError('');
+      
+      if (response.data.success) {
+        alert(`뉴스레터가 성공적으로 전송되었습니다. (${response.data.papers_count}개 논문, ${response.data.recipients_count}명 수신자)`);
+        setError('');
+      } else {
+        setError(response.data.error || '뉴스레터 생성 실패');
+      }
     } catch (err) {
-      setError(err.message);
+      setError('뉴스레터 생성 실패: ' + err.message);
       console.error('ERROR:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePreview = async () => {
+  const handleTest = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/newsletter/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+      const response = await newsletterAPI.test({
+        domain: config.domain,
+        max_papers: Math.min(config.max_papers, 5)
       });
-      if (!response.ok) throw new Error('미리보기 생성 실패');
-      const html = await response.text();
-      const newWindow = window.open();
-      newWindow.document.write(html);
+      
+      if (response.data.success) {
+        const preview = response.data.papers_preview.map(p => 
+          `- ${p.title} (${p.arxiv_id})`
+        ).join('\n');
+        alert(`테스트 성공!\n논문 ${response.data.papers_count}개 수집\n미리보기:\n${preview}`);
+        setError('');
+      } else {
+        setError(response.data.error || '테스트 실패');
+      }
     } catch (err) {
-      setError(err.message);
+      setError('테스트 실패: ' + err.message);
       console.error('ERROR:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,8 +104,8 @@ const Newsletter = () => {
                 type="email"
                 className="FormControl"
                 placeholder="newsletter@example.com"
-                value={config.senderEmail}
-                onChange={(e) => setConfig({...config, senderEmail: e.target.value})}
+                value={config.sender_email}
+                onChange={(e) => setConfig({...config, sender_email: e.target.value})}
               />
             </div>
             <div className="FormGroup">
@@ -96,11 +115,9 @@ const Newsletter = () => {
                 value={config.domain}
                 onChange={(e) => setConfig({...config, domain: e.target.value})}
               >
-                <option value="cs">Computer Science</option>
+                <option value="computer">Computer Science</option>
                 <option value="math">Mathematics</option>
                 <option value="physics">Physics</option>
-                <option value="q-bio">Quantitative Biology</option>
-                <option value="q-fin">Quantitative Finance</option>
               </select>
             </div>
             <div className="FormGroup">
@@ -108,8 +125,8 @@ const Newsletter = () => {
               <input
                 type="number"
                 className="FormControl"
-                value={config.period}
-                onChange={(e) => setConfig({...config, period: parseInt(e.target.value)})}
+                value={config.days_back}
+                onChange={(e) => setConfig({...config, days_back: parseInt(e.target.value)})}
                 min="1"
               />
             </div>
@@ -118,8 +135,8 @@ const Newsletter = () => {
               <input
                 type="number"
                 className="FormControl"
-                value={config.maxPapers}
-                onChange={(e) => setConfig({...config, maxPapers: parseInt(e.target.value)})}
+                value={config.max_papers}
+                onChange={(e) => setConfig({...config, max_papers: parseInt(e.target.value)})}
                 min="1"
                 max="50"
               />
@@ -127,52 +144,30 @@ const Newsletter = () => {
           </div>
 
           <div className="FormGroup">
-            <label className="FormLabel">이메일 제목</label>
+            <label className="FormLabel">뉴스레터 제목</label>
             <input
               type="text"
               className="FormControl"
-              value={config.subject}
-              onChange={(e) => setConfig({...config, subject: e.target.value})}
+              value={config.title}
+              onChange={(e) => setConfig({...config, title: e.target.value})}
             />
-          </div>
-
-          <div className="FormGroup">
-            <label className="FormLabel">템플릿 선택</label>
-            <div className="Grid">
-              {templates.map(template => (
-                <div
-                  key={template.id}
-                  className={`Card ${config.template === template.id ? 'selected' : ''}`}
-                  style={{
-                    cursor: 'pointer',
-                    border: config.template === template.id ? '2px solid var(--primary)' : '1px solid var(--border-light)',
-                    padding: '1rem'
-                  }}
-                  onClick={() => setConfig({...config, template: template.id})}
-                >
-                  <h4 style={{marginBottom: '0.5rem'}}>{template.name}</h4>
-                  <p style={{color: 'var(--text-light)', fontSize: '0.875rem'}}>
-                    {template.description}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem'}}>
             <button
               className="Button Button--primary"
               onClick={handleGenerate}
-              disabled={loading || !config.recipients || !config.senderEmail}
+              disabled={loading}
             >
               <i className="fas fa-envelope"></i> {loading ? '생성 중...' : '생성 & 전송'}
             </button>
             <button
               className="Button"
               style={{backgroundColor: 'transparent', border: '1px solid var(--border)', color: 'var(--text)'}}
-              onClick={handlePreview}
+              onClick={handleTest}
+              disabled={loading}
             >
-              <i className="fas fa-eye"></i> 미리보기
+              <i className="fas fa-flask"></i> 테스트
             </button>
           </div>
         </div>
@@ -190,19 +185,19 @@ const Newsletter = () => {
               <p>고급 AI를 사용한 연구 논문 자동 요약</p>
             </div>
             <div style={{textAlign: 'center', padding: '1.5rem'}}>
-              <i className="fas fa-calendar-alt" style={{fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem'}}></i>
-              <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem'}}>예약 발송</h3>
-              <p>일간, 주간, 월간 뉴스레터 자동 발송</p>
+              <i className="fas fa-file-pdf" style={{fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem'}}></i>
+              <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem'}}>PDF 생성</h3>
+              <p>논문 목록과 요약을 PDF로 자동 생성</p>
+            </div>
+            <div style={{textAlign: 'center', padding: '1.5rem'}}>
+              <i className="fas fa-envelope" style={{fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem'}}></i>
+              <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem'}}>이메일 전송</h3>
+              <p>HTML 형식으로 자동 이메일 전송</p>
             </div>
             <div style={{textAlign: 'center', padding: '1.5rem'}}>
               <i className="fas fa-filter" style={{fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem'}}></i>
               <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem'}}>맞춤 필터</h3>
-              <p>도메인, 카테고리, 저자별 필터링</p>
-            </div>
-            <div style={{textAlign: 'center', padding: '1.5rem'}}>
-              <i className="fas fa-chart-bar" style={{fontSize: '2.5rem', color: 'var(--primary)', marginBottom: '1rem'}}></i>
-              <h3 style={{fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem'}}>분석</h3>
-              <p>열람률, 클릭률 등 참여 지표 추적</p>
+              <p>도메인, 카테고리별 필터링</p>
             </div>
           </div>
         </div>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArXiv AI Summary PDF Generator</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f0f0f0; }
+        .MainContainer { display: flex; height: 100vh; }
+        .InputPanel { width: 400px; padding: 20px; background: white; overflow-y: auto; border-right: 1px solid #ddd; }
+        .PdfPanel { flex: 1; background: #f5f5f5; }
+        .SectionBox { margin-bottom: 20px; }
+        .SectionBox h3 { margin: 0 0 10px 0; color: #333; }
+        .SectionBox textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .GenerateButton { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; }
+        .GenerateButton:hover { background: #0056b3; }
+        .GenerateButton:disabled { background: #ccc; cursor: not-allowed; }
+        .PdfViewer { width: 100%; height: 100%; border: none; }
+        .DebugConsole { background: #000; color: #0f0; padding: 10px; font-family: monospace; font-size: 11px; height: 120px; overflow-y: auto; margin-top: 20px; }
+        .ErrorLog { color: #f00; }
+        .InfoLog { color: #0f0; }
+        .StatusBar { background: #333; color: white; padding: 8px; font-size: 12px; }
+        .EmptyState { display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="MainContainer">
+        <div class="InputPanel">
+            <h2>AI 요약 → PDF 생성</h2>
+            
+            <div class="SectionBox">
+                <h3>Background</h3>
+                <textarea id="BackgroundInput" rows="4" placeholder="배경 설명을 입력하세요...">웹 애플리케이션의 보안성 확보에서 CAPTCHA가 중요한 역할을 하고 있으나, 사용성과 접근성에서 여전히 개선이 필요한 상황입니다.</textarea>
+            </div>
+            
+            <div class="SectionBox">
+                <h3>Problem Definition</h3>
+                <textarea id="ProblemInput" rows="3" placeholder="문제 정의를 입력하세요...">기존 CAPTCHA 시스템의 한계점을 극복하고 보다 효율적인 보안 검증 방법이 필요합니다.</textarea>
+            </div>
+            
+            <div class="SectionBox">
+                <h3>Motivation</h3>
+                <textarea id="MotivationInput" rows="3" placeholder="동기를 입력하세요...">사용자 경험과 보안성 사이의 균형점을 찾아 더 나은 웹 보안 솔루션을 제공하고자 합니다.</textarea>
+            </div>
+            
+            <div class="SectionBox">
+                <h3>Contributions</h3>
+                <textarea id="ContributionsInput" rows="4" placeholder="기여도를 입력하세요...">Open CaptchaWorld: CAPTCHA의 시각적 추론과 상호작용 기능을 평가하기 위한 포괄적인 벤치마크를 제시합니다.</textarea>
+            </div>
+            
+            <button class="GenerateButton" id="GenerateBtn" onclick="generatePdf()">PDF 생성 및 표시</button>
+            
+            <div class="DebugConsole" id="DebugConsole">
+                <div class="InfoLog">시스템 초기화 완료</div>
+            </div>
+        </div>
+        
+        <div class="PdfPanel">
+            <div class="StatusBar" id="StatusBar">PDF 생성 대기 중...</div>
+            <div class="EmptyState" id="EmptyState">
+                PDF를 생성하려면 왼쪽 버튼을 클릭하세요
+            </div>
+            <iframe class="PdfViewer" id="PdfViewer" style="display: none;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        let currentPdfFilename = null;
+        
+        function logDebug(message, level = 'INFO') {
+            const timestamp = new Date().toISOString();
+            const console = document.getElementById('DebugConsole');
+            const logClass = level === 'ERROR' ? 'ErrorLog' : 'InfoLog';
+            console.innerHTML += `<div class="${logClass}">[${timestamp.substring(11,19)}] ${level}: ${message}</div>`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('StatusBar').textContent = message;
+            logDebug(message);
+        }
+        
+        async function generatePdf() {
+            const generateBtn = document.getElementById('GenerateBtn');
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'PDF 생성 중...';
+            
+            updateStatus('PDF 생성 시작...');
+            
+            const summaryData = {
+                background: document.getElementById('BackgroundInput').value,
+                problem_definition: document.getElementById('ProblemInput').value,
+                motivation: document.getElementById('MotivationInput').value,
+                contributions: document.getElementById('ContributionsInput').value
+            };
+            
+            logDebug(`데이터 수집: ${JSON.stringify(summaryData)}`);
+            
+            try {
+                const response = await fetch('/generate_pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(summaryData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                logDebug(`서버 응답: ${JSON.stringify(result)}`);
+                
+                if (result.status === 'success') {
+                    currentPdfFilename = result.filename;
+                    
+                    // PDF 뷰어 표시
+                    const pdfViewer = document.getElementById('PdfViewer');
+                    const emptyState = document.getElementById('EmptyState');
+                    
+                    pdfViewer.src = `/view_pdf/${result.filename}`;
+                    pdfViewer.style.display = 'block';
+                    emptyState.style.display = 'none';
+                    
+                    updateStatus(`PDF 생성 완료: ${result.filename}`);
+                    logDebug(`PDF 표시 완료: ${result.filename}`);
+                    
+                } else {
+                    throw new Error(result.message || 'PDF 생성 실패');
+                }
+                
+            } catch (error) {
+                logDebug(`에러 발생: ${error.message}`, 'ERROR');
+                updateStatus(`에러: ${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'PDF 생성 및 표시';
+            }
+        }
+        
+        // 키보드 단축키
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                generatePdf();
+            }
+        });
+        
+        // 초기화
+        window.onload = function() {
+            logDebug('웹 인터페이스 로드 완료');
+            updateStatus('준비 완료 - PDF를 생성하려면 버튼을 클릭하세요');
+        };
+    </script>
+</body>
+</html>

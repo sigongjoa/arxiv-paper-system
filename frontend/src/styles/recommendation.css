@@ -1,0 +1,453 @@
+/* Recommendation System Styles */
+
+.RecommendationContainer {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.PageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.PageHeader h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.SystemStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.StatusBadge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.StatusBadge.success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #34d399;
+}
+
+.StatusBadge.warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+.InitializationPanel {
+  margin-bottom: 25px;
+}
+
+.Alert {
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.Alert.warning {
+  background-color: #fffbeb;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.Alert h3 {
+  margin: 0 0 10px 0;
+  color: #92400e;
+  font-size: 16px;
+}
+
+.Alert p {
+  margin: 0 0 15px 0;
+  line-height: 1.5;
+}
+
+.StatusMessage {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.ContentLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  min-height: 600px;
+}
+
+.PaperSelectionPanel,
+.RecommendationPanel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  overflow: hidden;
+}
+
+.PanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.PanelHeader h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.SearchBox {
+  flex: 1;
+  max-width: 300px;
+  margin-left: 20px;
+}
+
+.SearchInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.SearchInput:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.RecommendationSettings {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.RecommendationSettings label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.SelectInput {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  outline: none;
+}
+
+.PaperList {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.PaperCard {
+  padding: 15px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.PaperCard:hover {
+  background-color: #f8fafc;
+}
+
+.PaperCard.selected {
+  background-color: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.PaperCard:last-child {
+  border-bottom: none;
+}
+
+.PaperTitle {
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.PaperMeta {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.ArxivId {
+  font-family: 'Courier New', monospace;
+  background-color: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.Categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.CategoryTag {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.SelectedPaperInfo {
+  margin-bottom: 25px;
+}
+
+.SelectedPaper {
+  padding: 20px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.PaperAbstract {
+  margin-top: 10px;
+  line-height: 1.5;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.RecommendationResults h3 {
+  margin: 0 0 20px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.LoadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.RecommendationList {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.RecommendationCard {
+  display: flex;
+  gap: 15px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background-color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.RecommendationCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.RankBadge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.RecommendationContent {
+  flex: 1;
+}
+
+.TitleLink {
+  color: #1f2937;
+  text-decoration: none;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.TitleLink:hover {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.ScoreInfo {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.SimilarityScore,
+.HybridScore,
+.DetailedScores,
+.Methods {
+  background-color: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.SimilarityScore {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.HybridScore {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.DetailedScores {
+  background-color: #ede9fe;
+  color: #5b21b6;
+}
+
+.Methods {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  font-style: italic;
+}
+
+.NoRecommendations {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.EmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.EmptyState h3 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  color: #9ca3af;
+}
+
+.EmptyState p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.PrimaryButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.PrimaryButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.PrimaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .ContentLayout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .PaperSelectionPanel {
+    order: 1;
+  }
+  
+  .RecommendationPanel {
+    order: 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .RecommendationContainer {
+    padding: 15px;
+  }
+  
+  .PageHeader {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .PanelHeader {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .SearchBox {
+    margin-left: 0;
+    max-width: none;
+    width: 100%;
+  }
+  
+  .RecommendationCard {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .RankBadge {
+    align-self: flex-start;
+  }
+}

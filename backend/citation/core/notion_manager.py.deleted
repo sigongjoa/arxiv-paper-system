@@ -1,0 +1,64 @@
+import logging
+import json
+from datetime import datetime
+from typing import Dict, List, Optional
+
+logging.basicConfig(level=logging.ERROR)
+
+class NotionDocumentManager:
+    def __init__(self, parent_page_id: str = None):
+        self.parent_page_id = parent_page_id or "default_parent_page_id"
+        logging.error(f"NotionDocumentManager initialized with parent_page_id: {self.parent_page_id}")
+    
+    def create_citation_analysis_page(self, paper_data: Dict, analysis_results: Dict) -> Dict:
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            page_title = f"Citation Analysis: {paper_data.get('title', 'Unknown Paper')[:50]}"
+            
+            logging.error(f"Creating Notion page: {page_title}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp
+            }
+            
+        except Exception as e:
+            logging.error(f"Error creating Notion page: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def create_error_report(self, error_data: Dict) -> Dict:
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            page_title = f"Error Report: {error_data.get('function', 'Unknown Function')} - {timestamp}"
+            
+            logging.error(f"Creating error report: {page_title}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp
+            }
+            
+        except Exception as e:
+            logging.error(f"Error creating error report: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def create_graph_analysis_report(self, graph_data: Dict, stats: Dict) -> Dict:
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            paper_title = graph_data.get('paper', {}).get('title', 'Unknown Paper')
+            page_title = f"Graph Analysis: {paper_title[:50]} - {timestamp}"
+            
+            logging.error(f"Creating graph analysis report: {page_title}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp,
+                "stats": stats
+            }
+            
+        except Exception as e:
+            logging.error(f"Error creating graph analysis report: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}

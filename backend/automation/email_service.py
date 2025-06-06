@@ -1,4 +1,4 @@
-import boto3
+import os
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -9,8 +9,11 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self, aws_region: str = 'us-east-1'):
-        self.ses_client = boto3.client('ses', region_name=aws_region)
-        logger.info(f"DEBUG: EmailService initialized with region {aws_region}")
+        self.test_mode = os.getenv('EMAIL_TEST_MODE', 'true').lower() == 'true'
+        if not self.test_mode:
+            import boto3
+            self.ses_client = boto3.client('ses', region_name=aws_region)
+        logger.info(f"DEBUG: EmailService initialized (test_mode: {self.test_mode})")
     
     def send_newsletter(self, 
                        subject: str,
@@ -36,6 +39,33 @@ class EmailService:
             pdf_part.add_header('Content-Disposition', 'attachment', filename=pdf_filename)
             msg.attach(pdf_part)
             logger.info(f"DEBUG: PDF attachment added: {pdf_filename}")
+        
+        if self.test_mode:
+            # 테스트 모드: 이메일 전송하지 않고 로그만 남김
+            logger.info(f"TEST MODE: Would send email")
+            logger.info(f"  - Subject: {subject}")
+            logger.info(f"  - Recipients: {recipients}")
+            logger.info(f"  - Sender: {sender_email}")
+            logger.info(f"  - PDF attachment: {'Yes' if pdf_attachment else 'No'}")
+            logger.info(f"  - HTML content length: {len(html_content)} chars")
+            logger.info(f"  - Text content length: {len(text_content)} chars")
+            
+            # 테스트용 파일로 저장
+            output_dir = os.path.join(os.path.dirname(__file__), '..', 'output', 'test_emails')
+            os.makedirs(output_dir, exist_ok=True)
+            from datetime import datetime
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+            # HTML 저장
+            with open(os.path.join(output_dir, f'email_{timestamp}.html'), 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
+            # PDF 저장 (있다면)
+            if pdf_attachment:
+                with open(os.path.join(output_dir, f'newsletter_{timestamp}.pdf'), 'wb') as f:
+                    f.write(pdf_attachment)
+            
+            return {'success': True, 'message_id': f'test_{timestamp}', 'test_mode': True}
         
         try:
             response = self.ses_client.send_raw_email(

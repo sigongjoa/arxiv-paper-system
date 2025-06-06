@@ -1,0 +1,73 @@
+import React, { useState, useEffect } from 'react';
+import { paperAPI } from '../utils/api';
+
+const DebugPanel = () => {
+  const [serverStatus, setServerStatus] = useState(null);
+  const [error, setError] = useState('');
+
+  const checkServer = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/test');
+      const data = await response.json();
+      setServerStatus(data);
+      setError('');
+    } catch (err) {
+      setError('Server not responding: ' + err.message);
+      setServerStatus(null);
+    }
+  };
+
+  const testCrawl = async () => {
+    try {
+      const response = await paperAPI.crawlPapers('cs', 1, 5);
+      console.log('Test crawl success:', response.data);
+      alert('Crawl test successful! Check console for details.');
+    } catch (err) {
+      console.error('Test crawl failed:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      alert('Crawl test failed! Check console for details.');
+    }
+  };
+
+  useEffect(() => {
+    checkServer();
+  }, []);
+
+  return (
+    <div className="Card" style={{marginBottom: '1rem'}}>
+      <div className="CardHeader">
+        <h3 className="CardTitle">Debug Panel</h3>
+      </div>
+      <div className="CardBody">
+        {error && <div className="Error">{error}</div>}
+        
+        {serverStatus && (
+          <div style={{marginBottom: '1rem'}}>
+            <strong>Server Status:</strong> {serverStatus.status}<br/>
+            <strong>Python:</strong> {serverStatus.python_version?.split(' ')[0]}<br/>
+            <strong>Environment:</strong>
+            <ul style={{marginLeft: '1rem'}}>
+              <li>EMAIL_TEST_MODE: {serverStatus.environment?.EMAIL_TEST_MODE || 'Not set'}</li>
+              <li>AWS_REGION: {serverStatus.environment?.AWS_REGION || 'Not set'}</li>
+              <li>OPENAI_API_KEY: {serverStatus.environment?.OPENAI_API_KEY || 'Not set'}</li>
+            </ul>
+          </div>
+        )}
+        
+        <div style={{display: 'flex', gap: '0.5rem'}}>
+          <button className="Button Button--primary" onClick={checkServer}>
+            Check Server
+          </button>
+          <button className="Button Button--success" onClick={testCrawl}>
+            Test Crawl (5 papers)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DebugPanel;

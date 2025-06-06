@@ -1,71 +1,715 @@
-/* 전역 스타일은 common.css에서 관리 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+/* Sidebar Sub Navigation Styles */
+.SidebarSubNavigation {
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(59, 130, 246, 0.3);
+}
 
-.App {
+.SidebarSubButton {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  width: 100%;
+  border-radius: 0;
+  position: relative;
+  margin: 1px 0;
+}
+
+.SidebarNav.enhanced.collapsed .SidebarSubButton {
+  padding: 10px;
+  justify-content: center;
+}
+
+.SidebarSubButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateX(2px);
+}
+
+.SidebarSubButton.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.SidebarSubButton.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #60a5fa;
+}
+
+.SidebarSubButton i {
+  font-size: 14px;
+  min-width: 14px;
+}
+
+.SidebarNav.enhanced.collapsed .SidebarSubNavigation {
+  display: none;
+}
+
+/* Enhanced App.css for arXiv Analysis System v2.0 - Sidebar Layout */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
+}
+
+code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.AppLayout.enhanced {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-  .AppContainer {
-    padding: 0 0.5rem;
-  }
-  
-  .AppTitle {
-    font-size: 1.5rem;
-  }
-  
-  .TabNav {
-    padding: 0 1rem;
-  }
-  
-  .TabButton {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-  }
+.AppHeader.enhanced {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+  padding: 16px 24px;
 }
 
-/* 애니메이션 */
-.Card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.HeaderContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
-.Card:hover {
+.AppTitle.enhanced {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.TitleIcon {
+  font-size: 28px;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+  to { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 30px rgba(59, 130, 246, 0.5); }
+}
+
+.VersionBadge {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 12px;
+  animation: pulse 2s infinite;
+}
+
+.AppSubtitle {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.AppBody.enhanced {
+  flex: 1;
+  display: flex;
+  min-height: calc(100vh - 80px);
+}
+
+.SidebarNav.enhanced {
+  width: 280px;
+  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.SidebarNav.enhanced.collapsed {
+  width: 70px;
+}
+
+.SidebarToggle {
+  position: absolute;
+  top: 10px;
+  right: -15px;
+  background: #3b82f6;
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  z-index: 101;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.SidebarToggle:hover {
+  background: #1d4ed8;
+  transform: scale(1.1);
+}
+
+.SidebarButton.enhanced {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 16px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  width: 100%;
+  border-radius: 0;
+  position: relative;
+  margin: 2px 0;
+}
+
+.SidebarNav.enhanced.collapsed .SidebarButton.enhanced {
+  padding: 16px;
+  justify-content: center;
+}
+
+.SidebarButton.enhanced:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: translateX(4px);
+}
+
+.SidebarButton.enhanced.active {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.SidebarButton.enhanced.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #60a5fa;
+}
+
+.SidebarButton.enhanced i {
+  font-size: 18px;
+  min-width: 18px;
+}
+
+.SidebarLabel {
+  font-weight: 500;
+  transition: opacity 0.3s ease;
+}
+
+.SidebarNav.enhanced.collapsed .SidebarLabel {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.MainContent.enhanced {
+  flex: 1;
+  background: transparent;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.ContentWrapper {
+  padding: 8px;
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+  flex: 1;
+}
+
+.AppFooter {
+  background: #1e293b;
+  color: white;
+  padding: 12px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+}
+
+.FooterContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Enhanced loading states */
+.loading-enhanced {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.loading-spinner-enhanced {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced button styles */
+.btn-enhanced {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-enhanced:hover {
+  transform: translateY(-1px);
+}
+
+.btn-enhanced.primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.btn-enhanced.primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-enhanced.secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-enhanced.secondary:hover {
+  background: #e2e8f0;
+  color: #374155;
+}
+
+.btn-enhanced.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.btn-enhanced.success:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+.btn-enhanced.warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.btn-enhanced.warning:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}
+
+.btn-enhanced.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.btn-enhanced.danger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+}
+
+.btn-enhanced:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Enhanced card styles */
+.card-enhanced {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card-enhanced:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
-/* 로딩 상태 */
-.Loading {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.card-enhanced .card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+.card-enhanced .card-content {
+  padding: 24px;
+}
+
+/* Enhanced form styles */
+.form-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group-enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group-enhanced label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.form-control-enhanced {
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-control-enhanced:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Enhanced alert styles */
+.alert-enhanced {
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert-enhanced.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.alert-enhanced.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.alert-enhanced.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.alert-enhanced.info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+/* Error Fallback */
+.ErrorFallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.ErrorFallback h2 {
+  color: #dc2626;
+  margin: 0 0 12px 0;
+}
+
+.ErrorFallback p {
+  color: #7f1d1d;
+  margin: 0 0 20px 0;
+}
+
+.ErrorFallback button {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Loading Fallback */
+.LoadingFallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.LoadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.LoadingFallback p {
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .SidebarNav.enhanced {
+    width: 250px;
   }
-  50% {
-    opacity: 0.5;
+  
+  .SidebarButton.enhanced {
+    padding: 14px 20px;
+    font-size: 13px;
+  }
+  
+  .ContentWrapper {
+    padding: 20px;
   }
 }
 
-/* 스크롤바 스타일링 */
-::-webkit-scrollbar {
-  width: 8px;
+@media (max-width: 768px) {
+  .AppHeader.enhanced {
+    padding: 12px 16px;
+  }
+  
+  .HeaderContainer {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .AppTitle.enhanced {
+    font-size: 20px;
+  }
+  
+  .TitleIcon {
+    font-size: 24px;
+  }
+  
+  .AppSubtitle {
+    font-size: 12px;
+  }
+  
+  .SidebarNav.enhanced {
+    width: 200px;
+  }
+  
+  .SidebarButton.enhanced {
+    padding: 12px 16px;
+    font-size: 12px;
+  }
+  
+  .ContentWrapper {
+    padding: 16px;
+  }
+  
+  .FooterContent {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+    font-size: 11px;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: var(--border-light);
+@media (max-width: 640px) {
+  .AppBody.enhanced {
+    flex-direction: column;
+  }
+  
+  .SidebarNav.enhanced {
+    width: 100%;
+    flex-direction: row;
+    padding: 12px 0;
+    overflow-x: auto;
+    min-height: auto;
+  }
+  
+  .SidebarNav.enhanced.collapsed {
+    width: 100%;
+  }
+  
+  .SidebarToggle {
+    display: none;
+  }
+  
+  .SidebarButton.enhanced {
+    min-width: 120px;
+    padding: 8px 12px;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+  
+  .SidebarButton.enhanced i {
+    font-size: 16px;
+  }
+  
+  .SidebarLabel {
+    font-size: 10px;
+  }
+  
+  .MainContent.enhanced {
+    min-height: auto;
+  }
+  
+  .ContentWrapper {
+    padding: 12px;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-light);
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    color: #f9fafb;
+  }
+  
+  .card-enhanced {
+    background: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+  
+  .card-enhanced .card-header {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+  
+  .form-control-enhanced {
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #f9fafb;
+  }
+  
+  .btn-enhanced.secondary {
+    background: #4b5563;
+    color: #f3f4f6;
+    border-color: #6b7280;
+  }
+  
+  .btn-enhanced.secondary:hover {
+    background: #6b7280;
+    color: #f9fafb;
+  }
+}
+
+/* Print styles */
+@media print {
+  .AppHeader.enhanced,
+  .AppFooter,
+  .SidebarNav.enhanced {
+    display: none;
+  }
+  
+  .AppBody.enhanced {
+    flex-direction: column;
+  }
+  
+  .MainContent.enhanced {
+    width: 100%;
+  }
+  
+  .ContentWrapper {
+    padding: 0;
+  }
 }

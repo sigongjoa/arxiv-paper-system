@@ -1,66 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { pdfAPI } from '../utils/api';
 
 const WebPDFViewer = () => {
   const [pdfList, setPdfList] = useState([]);
   const [selectedPdf, setSelectedPdf] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('latest');
-  const [category, setCategory] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [zoom, setZoom] = useState(100);
 
-  const handleSearch = async () => {
+  useEffect(() => {
+    loadPdfList();
+  }, []);
+
+  const loadPdfList = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/pdfs/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: searchQuery,
-          sortBy,
-          category
-        })
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setPdfList(data);
+      const response = await pdfAPI.getList();
+      if (response.data.success) {
+        setPdfList(response.data.pdfs || []);
+        setError('');
+      } else {
+        setError(response.data.error || 'PDF 목록 로드 실패');
       }
     } catch (err) {
+      setError('PDF 목록 로드 실패: ' + err.message);
       console.error('ERROR:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const formData = new FormData();
-        formData.append('pdf', file);
-        
-        try {
-          const response = await fetch('/api/pdfs/upload', {
-            method: 'POST',
-            body: formData
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setPdfList(prev => [data, ...prev]);
-          }
-        } catch (err) {
-          console.error('ERROR:', err);
-        }
-      }
-    };
-    input.click();
-  };
-
-  const handleSelectPdf = (pdf) => {
+  const handleSelectPdf = async (pdf) => {
     setSelectedPdf(pdf);
     setCurrentPage(1);
-    setTotalPages(pdf.totalPages || 1);
+    setTotalPages(1);
+    setError('');
+  };
+
+  const handleDeletePdf = async (pdfId) => {
+    if (!confirm('이 PDF를 삭제하시겠습니까?')) return;
+    
+    try {
+      const response = await pdfAPI.delete(pdfId);
+      if (response.data.success) {
+        setPdfList(prev => prev.filter(pdf => pdf.id !== pdfId));
+        if (selectedPdf?.id === pdfId) {
+          setSelectedPdf(null);
+        }
+        alert('PDF가 삭제되었습니다.');
+      } else {
+        setError(response.data.error || 'PDF 삭제 실패');
+      }
+    } catch (err) {
+      setError('PDF 삭제 실패: ' + err.message);
+      console.error('ERROR:', err);
+    }
   };
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
@@ -68,23 +64,49 @@ const WebPDFViewer = () => {
   const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
 
-  const handleDownload = () => {
-    if (selectedPdf) {
+  const handleDownload = async () => {
+    if (!selectedPdf) return;
+    
+    try {
+      const response = await pdfAPI.download(selectedPdf.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = selectedPdf.url;
-      a.download = selectedPdf.title + '.pdf';
+      a.href = url;
+      a.download = selectedPdf.name;
       a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('다운로드 실패: ' + err.message);
+      console.error('ERROR:', err);
     }
   };
 
-  const handlePrint = () => {
-    if (selectedPdf) {
-      window.open(selectedPdf.url, '_blank');
+  const handlePrint = async () => {
+    if (!selectedPdf) return;
+    
+    try {
+      const response = await pdfAPI.view(selectedPdf.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('프린트 실패: ' + err.message);
+      console.error('ERROR:', err);
     }
   };
 
-  const handleRotate = () => {
-    // 회전 기능 구현
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('ko-KR');
   };
 
   return (
@@ -94,54 +116,21 @@ const WebPDFViewer = () => {
           <i className="fas fa-list"></i> PDF 컬렉션 ({pdfList.length})
         </div>
         <div style={{flex: 1, overflowY: 'auto', padding: '1rem'}}>
-          <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1rem'}}>
-            <input
-              type="text"
-              className="FormControl"
-              placeholder="PDF 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{flex: 1}}
-            />
-            <button className="Button Button--primary" style={{padding: '0.5rem 1rem', fontSize: '0.875rem'}} onClick={handleSearch}>
-              <i className="fas fa-search"></i>
-            </button>
-          </div>
+          {error && <div className="Error" style={{fontSize: '0.875rem', padding: '0.5rem', marginBottom: '1rem'}}>{error}</div>}
           
-          <div style={{marginBottom: '1rem'}}>
-            <div style={{marginBottom: '0.75rem'}}>
-              <label style={{display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500}}>정렬</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{width: '100%', padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '0.875rem'}}
-              >
-                <option value="latest">최신순</option>
-                <option value="title">제목순</option>
-                <option value="author">저자순</option>
-                <option value="date">날짜순</option>
-              </select>
-            </div>
-            
-            <div style={{marginBottom: '0.75rem'}}>
-              <label style={{display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', fontWeight: 500}}>카테고리</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{width: '100%', padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '0.875rem'}}
-              >
-                <option value="all">전체 카테고리</option>
-                <option value="cs">Computer Science</option>
-                <option value="math">Mathematics</option>
-                <option value="physics">Physics</option>
-              </select>
-            </div>
-          </div>
+          <button
+            className="Button Button--primary"
+            style={{width: '100%', marginBottom: '1rem'}}
+            onClick={loadPdfList}
+            disabled={loading}
+          >
+            <i className="fas fa-refresh"></i> {loading ? '로딩 중...' : '새로고침'}
+          </button>
           
           <ul style={{listStyle: 'none'}}>
-            {pdfList.map((pdf, index) => (
+            {pdfList.map((pdf) => (
               <li
-                key={index}
+                key={pdf.id}
                 style={{
                   padding: '0.75rem',
                   borderBottom: '1px solid var(--border-light)',
@@ -154,17 +143,29 @@ const WebPDFViewer = () => {
                 onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--secondary)'}
                 onMouseLeave={(e) => e.target.style.backgroundColor = selectedPdf?.id === pdf.id ? '#e0f2fe' : 'transparent'}
               >
-                <div style={{fontWeight: 500, marginBottom: '0.25rem', fontSize: '0.875rem'}}>{pdf.title}</div>
-                <div style={{fontSize: '0.75rem', color: 'var(--text-light)'}}>{pdf.author} • {pdf.date}</div>
+                <div style={{fontWeight: 500, marginBottom: '0.25rem', fontSize: '0.875rem'}}>{pdf.name}</div>
+                <div style={{fontSize: '0.75rem', color: 'var(--text-light)', marginBottom: '0.25rem'}}>
+                  {formatFileSize(pdf.size)} • {formatDate(pdf.created_at)}
+                </div>
+                <button
+                  className="Button Button--danger"
+                  style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePdf(pdf.id);
+                  }}
+                >
+                  <i className="fas fa-trash"></i> 삭제
+                </button>
               </li>
             ))}
           </ul>
           
-          {pdfList.length === 0 && (
+          {pdfList.length === 0 && !loading && (
             <div style={{textAlign: 'center', padding: '2rem 1rem'}}>
               <i className="fas fa-file-pdf" style={{fontSize: '2rem', marginBottom: '1rem', color: 'var(--border)'}}></i>
               <h4 style={{fontSize: '1rem', marginBottom: '0.5rem'}}>PDF를 찾을 수 없음</h4>
-              <p style={{fontSize: '0.875rem', color: 'var(--text-light)'}}>PDF를 업로드하거나 논문을 검색하여 시작하세요.</p>
+              <p style={{fontSize: '0.875rem', color: 'var(--text-light)'}}>뉴스레터를 생성하면 PDF가 자동으로 생성됩니다.</p>
             </div>
           )}
         </div>
@@ -172,11 +173,8 @@ const WebPDFViewer = () => {
       
       <div style={{backgroundColor: 'white', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
         <div style={{padding: '1rem', backgroundColor: 'var(--secondary)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-          <div style={{fontWeight: 600, fontSize: '1.125rem'}}>웹 PDF 뷰어</div>
-          <div>
-            <button className="Button Button--primary" style={{padding: '0.5rem 1rem', fontSize: '0.875rem'}} onClick={handleUpload}>
-              <i className="fas fa-upload"></i> PDF 업로드
-            </button>
+          <div style={{fontWeight: 600, fontSize: '1.125rem'}}>
+            {selectedPdf ? selectedPdf.name : '웹 PDF 뷰어'}
           </div>
         </div>
         
@@ -221,21 +219,6 @@ const WebPDFViewer = () => {
             </button>
             <button
               style={{background: 'transparent', border: 'none', padding: '0.5rem', cursor: 'pointer', borderRadius: 'var(--radius)', color: 'var(--text)', transition: 'background-color 0.2s ease'}}
-              disabled={!selectedPdf}
-              title="너비에 맞춤"
-            >
-              <i className="fas fa-arrows-alt-h"></i>
-            </button>
-            <button
-              style={{background: 'transparent', border: 'none', padding: '0.5rem', cursor: 'pointer', borderRadius: 'var(--radius)', color: 'var(--text)', transition: 'background-color 0.2s ease'}}
-              onClick={handleRotate}
-              disabled={!selectedPdf}
-              title="회전"
-            >
-              <i className="fas fa-redo"></i>
-            </button>
-            <button
-              style={{background: 'transparent', border: 'none', padding: '0.5rem', cursor: 'pointer', borderRadius: 'var(--radius)', color: 'var(--text)', transition: 'background-color 0.2s ease'}}
               onClick={handleDownload}
               disabled={!selectedPdf}
               title="다운로드"
@@ -258,10 +241,7 @@ const WebPDFViewer = () => {
             <div style={{textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-light)'}}>
               <i className="fas fa-file-pdf" style={{fontSize: '4rem', marginBottom: '1rem', color: 'var(--border)'}}></i>
               <h3 style={{fontSize: '1.5rem', marginBottom: '1rem', fontWeight: 600}}>PDF를 선택하여 보기</h3>
-              <p>사이드바에서 PDF를 선택하거나 새 파일을 업로드하여 시작하세요.</p>
-              <button className="Button Button--primary" style={{marginTop: '1rem'}} onClick={handleUpload}>
-                <i className="fas fa-upload"></i> PDF 업로드
-              </button>
+              <p>사이드바에서 PDF를 선택하여 시작하세요.</p>
             </div>
           ) : (
             <div style={{
@@ -273,12 +253,11 @@ const WebPDFViewer = () => {
               backgroundColor: 'white'
             }}>
               <iframe
-                src={selectedPdf.url}
+                src={`http://localhost:8000/api/v1/pdf/view/${selectedPdf.id}#zoom=${zoom}`}
                 style={{
-                  width: `${zoom}%`,
+                  width: '100%',
                   height: '100%',
-                  border: 'none',
-                  maxWidth: '100%'
+                  border: 'none'
                 }}
                 title="PDF Viewer"
               />

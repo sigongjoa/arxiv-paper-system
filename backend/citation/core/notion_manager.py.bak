@@ -1,0 +1,320 @@
+import logging
+import json
+from datetime import datetime
+from typing import Dict, List, Optional
+
+logging.basicConfig(level=logging.ERROR)
+
+class NotionManager:
+    def __init__(self, parent_page_id: str = None):
+        self.parent_page_id = parent_page_id or "default_parent_page_id"
+        
+        logging.error(f"NotionManager initialized with parent_page_id: {self.parent_page_id}")
+    
+    def save_citation_analysis(self, arxiv_id: str, analysis: Dict) -> Dict:
+        """Citation 분석 결과를 Notion에 저장"""
+        try:
+            # 간단한 로깅 버전 (실제 Notion API 호출 없음)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            page_title = f"Citation Analysis: {arxiv_id} - {timestamp}"
+            
+            logging.error(f"Saving citation analysis to Notion: {page_title}")
+            logging.error(f"Analysis data: {analysis}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp
+            }
+            
+        except Exception as e:
+            logging.error(f"Error saving citation analysis: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def save_citation_graph(self, arxiv_id: str, network_data: Dict, graph_depth: int) -> Dict:
+        """Citation 그래프를 Notion에 저장"""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            page_title = f"Citation Graph: {arxiv_id} - Depth {graph_depth} - {timestamp}"
+            
+            node_count = len(network_data.get('nodes', []))
+            edge_count = len(network_data.get('edges', []))
+            
+            logging.error(f"Saving citation graph to Notion: {page_title}")
+            logging.error(f"Graph stats - Nodes: {node_count}, Edges: {edge_count}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp,
+                "stats": {
+                    "node_count": node_count,
+                    "edge_count": edge_count,
+                    "depth": graph_depth
+                }
+            }
+            
+        except Exception as e:
+            logging.error(f"Error saving citation graph: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def create_citation_analysis_page(self, paper_data: Dict, analysis_results: Dict) -> Dict:
+        """Citation 분석 결과를 Notion 페이지로 저장"""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            page_title = f"Citation Analysis: {paper_data.get('title', 'Unknown Paper')[:50]}"
+            
+            # Notion 페이지 생성
+            page_data = {
+                "parent": {"page_id": self.parent_page_id},
+                "properties": {
+                    "title": [
+                        {
+                            "text": {"content": page_title}
+                        }
+                    ]
+                }
+            }
+            
+            # 페이지 내용 구성
+            content_blocks = self._build_analysis_content(paper_data, analysis_results, timestamp)
+            
+            logging.error(f"Creating Notion page: {page_title}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp,
+                "content_blocks": len(content_blocks)
+            }
+            
+        except Exception as e:
+            logging.error(f"Error creating Notion page: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def _build_analysis_content(self, paper_data: Dict, analysis_results: Dict, timestamp: str) -> List[Dict]:
+        """분석 결과를 Notion 블록으로 변환"""
+        blocks = []
+        
+        # 기본 정보 섹션
+        blocks.append({
+            "type": "paragraph",
+            "paragraph": {
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {"content": f"분석 실행 시간: {timestamp}"}
+                    }
+                ]
+            }
+        })
+        
+        # 논문 정보
+        blocks.append({
+            "type": "paragraph", 
+            "paragraph": {
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {"content": f"arXiv ID: {paper_data.get('id', 'Unknown')}"}
+                    }
+                ]
+            }
+        })
+        
+        # 분석 결과
+        analysis = analysis_results.get('analysis', {})
+        blocks.append({
+            "type": "bulleted_list_item",
+            "bulleted_list_item": {
+                "rich_text": [
+                    {
+                        "type": "text", 
+                        "text": {"content": f"인용 횟수: {analysis.get('citation_count', 0)}"}
+                    }
+                ]
+            }
+        })
+        
+        blocks.append({
+            "type": "bulleted_list_item",
+            "bulleted_list_item": {
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {"content": f"참고문헌 수: {analysis.get('reference_count', 0)}"}
+                    }
+                ]
+            }
+        })
+        
+        blocks.append({
+            "type": "bulleted_list_item", 
+            "bulleted_list_item": {
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {"content": f"영향력 점수: {analysis.get('impact_score', 0):.2f}"}
+                    }
+                ]
+            }
+        })
+        
+        # 유사 논문 정보
+        similar_papers = analysis_results.get('similar_papers', [])
+        if similar_papers:
+            for paper in similar_papers[:5]:  # 최대 5개
+                blocks.append({
+                    "type": "bulleted_list_item",
+                    "bulleted_list_item": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {"content": f"유사논문: {paper.get('title', 'Unknown')} (인용수: {paper.get('citation_count', 0)})"}
+                            }
+                        ]
+                    }
+                })
+        
+        return blocks
+    
+    def create_error_report(self, error_data: Dict) -> Dict:
+        """오류 보고서를 Notion에 저장"""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            page_title = f"Error Report: {error_data.get('function', 'Unknown Function')} - {timestamp}"
+            
+            # 오류 내용 구성
+            error_blocks = []
+            
+            error_blocks.append({
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {"content": f"오류 발생 시간: {timestamp}"}
+                        }
+                    ]
+                }
+            })
+            
+            error_blocks.append({
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text", 
+                            "text": {"content": f"함수: {error_data.get('function', 'Unknown')}"}
+                        }
+                    ]
+                }
+            })
+            
+            error_blocks.append({
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {"content": f"오류 메시지: {error_data.get('error', 'Unknown error')}"}
+                        }
+                    ]
+                }
+            })
+            
+            if error_data.get('input_params'):
+                error_blocks.append({
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {"content": f"입력 파라미터: {json.dumps(error_data['input_params'], ensure_ascii=False)}"}
+                            }
+                        ]
+                    }
+                })
+            
+            logging.error(f"Creating error report: {page_title}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp
+            }
+            
+        except Exception as e:
+            logging.error(f"Error creating error report: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+    
+    def create_graph_analysis_report(self, graph_data: Dict, stats: Dict) -> Dict:
+        """그래프 분석 결과를 Notion에 저장"""
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            paper_title = graph_data.get('paper', {}).get('title', 'Unknown Paper')
+            page_title = f"Graph Analysis: {paper_title[:50]} - {timestamp}"
+            
+            # 그래프 통계 블록 구성
+            stat_blocks = []
+            
+            stat_blocks.append({
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {"content": f"분석 시간: {timestamp}"}
+                        }
+                    ]
+                }
+            })
+            
+            stat_blocks.append({
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {"content": f"노드 수: {stats.get('node_count', 0)}"}
+                        }
+                    ]
+                }
+            })
+            
+            stat_blocks.append({
+                "type": "bulleted_list_item", 
+                "bulleted_list_item": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {"content": f"엣지 수: {stats.get('edge_count', 0)}"}
+                        }
+                    ]
+                }
+            })
+            
+            stat_blocks.append({
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": [
+                        {
+                            "type": "text", 
+                            "text": {"content": f"그래프 깊이: {stats.get('depth', 'Unknown')}"}
+                        }
+                    ]
+                }
+            })
+            
+            logging.error(f"Creating graph analysis report: {page_title}")
+            
+            return {
+                "success": True,
+                "page_title": page_title,
+                "timestamp": timestamp,
+                "stats": stats
+            }
+            
+        except Exception as e:
+            logging.error(f"Error creating graph analysis report: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}

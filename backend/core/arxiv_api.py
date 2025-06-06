@@ -44,3 +44,13 @@ class ArxivAPI:
         
         logger.info(f"Retrieved {len(papers)} papers from arXiv")
         return papers
+
+class ArxivClient:
+    def __init__(self):
+        self.api = ArxivAPI()
+        
+    def search_recent_papers(self, domain: str, days: int):
+        query = f"cat:{domain}*"
+        papers = self.api.search(query, max_results=100)
+        logging.error(f"Found {len(papers)} papers for domain {domain}")
+        return papers

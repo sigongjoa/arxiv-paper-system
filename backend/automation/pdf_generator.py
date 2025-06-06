@@ -1,95 +1,63 @@
 import logging
 from typing import Dict, List
-import tempfile
 import os
-import subprocess
 
 logger = logging.getLogger(__name__)
 
 class PdfGenerator:
     def __init__(self, headless: bool = True):
         self.headless = headless
-        logger.info("DEBUG: PdfGenerator initialized")
+        # 기존 PDF 생성기 가져오기
+        from utils.pdf_generator import AIAnalysisPDFGenerator
+        self.ai_pdf_generator = AIAnalysisPDFGenerator()
+        logger.info("DEBUG: PdfGenerator initialized with Enhanced Template")
     
-    def generate_from_papers(self, papers: List[Dict], title: str = "arXiv Newsletter") -> bytes:
-        html_content = self._generate_html_content(papers, title)
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as html_file:
-            html_file.write(html_content)
-            html_path = html_file.name
-        
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as pdf_file:
-            pdf_path = pdf_file.name
-        
+    def generate_from_papers(self, papers: List[Dict], title: str = "Research Analysis Report") -> bytes:
+        """Enhanced 템플릿으로 PDF 생성"""
         try:
-            cmd = [
-                'wkhtmltopdf',
-                '--page-size', 'A4',
-                '--margin-top', '20mm',
-                '--margin-bottom', '20mm', 
-                '--margin-left', '15mm',
-                '--margin-right', '15mm',
-                '--encoding', 'UTF-8',
-                html_path, pdf_path
-            ]
+            if not papers:
+                raise Exception("No papers to generate PDF")
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            if result.returncode != 0:
-                logger.error(f"ERROR: wkhtmltopdf failed: {result.stderr}")
-                raise Exception(f"PDF generation failed: {result.stderr}")
+            # 첫 번째 논문으로 PDF 생성 (개별 PDF이므로)
+            paper = papers[0]
             
-            with open(pdf_path, 'rb') as pdf_file:
-                pdf_bytes = pdf_file.read()
+            # 기존 방식으로 PDF 생성 (안정성을 위해)
+            paper_title = paper.get('title', 'Unknown Title')
+            paper_id = paper.get('paper_id', 'unknown')
+            if not paper_id or paper_id == 'unknown':
+                paper_id = paper_title[:20].replace(' ', '_').replace('/', '_')
             
-            logger.info(f"DEBUG: PDF generated, size: {len(pdf_bytes)} bytes")
+            # AI 분석 결과를 기존 형식에 맞게 변환
+            analysis_data = {
+                'background': {
+                    'problem_definition': paper.get('summary', ''),
+                    'motivation': paper.get('methodology', '')
+                },
+                'contributions': paper.get('key_insights', []),
+                'main_findings': paper.get('main_findings', []),
+                'limitations': paper.get('limitations', []),
+                'future_work': paper.get('future_work', []),
+                'keywords': paper.get('keywords', []),
+                'confidence_score': paper.get('confidence_score', 0.0),
+                'platform': paper.get('platform', 'Unknown')
+            }
+            
+            # PDF 생성
+            pdf_path = self.ai_pdf_generator.generate_analysis_pdf(
+                title=paper_title,
+                arxiv_id=paper_id,
+                analysis=analysis_data
+            )
+            
+            # 생성된 PDF 파일을 바이트로 읽기
+            with open(pdf_path, 'rb') as f:
+                pdf_bytes = f.read()
+            
+            logger.info(f"DEBUG: PDF generated successfully, size: {len(pdf_bytes)} bytes")
+            logger.info(f"DEBUG: PDF saved at: {pdf_path}")
+            
             return pdf_bytes
             
         except Exception as e:
             logger.error(f"ERROR: PDF generation failed: {str(e)}", exc_info=True)
             raise
-        finally:
-            if os.path.exists(html_path):
-                os.unlink(html_path)
-            if os.path.exists(pdf_path):
-                os.unlink(pdf_path)
-    
-    def _generate_html_content(self, papers: List[Dict], title: str) -> str:
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>{title}</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .header {{ border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }}
-                .paper {{ margin-bottom: 30px; padding: 15px; border-left: 3px solid #007acc; }}
-                .title {{ font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }}
-                .authors {{ color: #666; margin-bottom: 5px; }}
-                .categories {{ color: #888; font-size: 12px; margin-bottom: 10px; }}
-                .summary {{ line-height: 1.6; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>{title}</h1>
-                <p>Total Papers: {len(papers)}</p>
-            </div>
-        """
-        
-        for i, paper in enumerate(papers, 1):
-            html += f"""
-            <div class="paper">
-                <div class="title">{i}. {paper.get('title', 'No Title')}</div>
-                <div class="authors">Authors: {', '.join(paper.get('authors', []))}</div>
-                <div class="categories">Categories: {', '.join(paper.get('categories', []))}</div>
-                <div class="summary">{paper.get('summary', 'No summary available')}</div>
-            </div>
-            """
-        
-        html += """
-        </body>
-        </html>
-        """
-        
-        return html

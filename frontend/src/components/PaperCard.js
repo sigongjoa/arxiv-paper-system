@@ -1,37 +1,122 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { paperAPI } from '../utils/api';
 
 const PaperCard = ({ paper }) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
-  const [parsedAnalysis, setParsedAnalysis] = useState(null);
-  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [progressStep, setProgressStep] = useState(0);
+  
+  const progressSteps = [
+    { text: '📄 논문 내용 분석 준비 중...', icon: '📄' },
+    { text: '🧠 AI 분석 엔진 시작...', icon: '🧠' },
+    { text: '📝 분석 결과 생성 중...', icon: '📝' },
+    { text: '📊 PDF 레이아웃 작성 중...', icon: '📊' },
+    { text: '✨ 완료 및 PDF 로드 중...', icon: '✨' }
+  ];
+  
+  useEffect(() => {
+    let interval;
+    if (analyzing) {
+      setProgressStep(0);
+      interval = setInterval(() => {
+        setProgressStep(prev => {
+          if (prev < progressSteps.length - 1) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 2000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [analyzing]);
   
   const handleAnalyze = async () => {
     console.log('DEBUG: Starting analysis for paper:', paper.arxiv_id);
     setAnalyzing(true);
+    setProgressStep(0);
     
     try {
+      // 진행상태 표시를 위한 인위적 지연
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setProgressStep(1);
+      
       const response = await paperAPI.analyzePaper(paper.arxiv_id);
       console.log('DEBUG: Analysis response:', response.data);
+      
+      setProgressStep(2);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const analysisText = response.data.analysis;
       setAnalysis(analysisText);
       
-      try {
-        const parsed = JSON.parse(analysisText);
-        setParsedAnalysis(parsed);
-      } catch (e) {
-        console.log('DEBUG: Failed to parse JSON, using raw text');
-      }
+      setProgressStep(3);
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      setShowAnalysis(true);
+      // 팝업 대신 즉시 PDF 생성
+      await generatePdfFromAnalysis(analysisText);
+      
     } catch (error) {
       console.error('ERROR: Analysis failed:', error);
+      alert('분석에 실패했습니다.');
     }
     
     setAnalyzing(false);
+    setProgressStep(0);
   };
+  
+  const generatePdfFromAnalysis = async (analysisData) => {
+    console.log('DEBUG: Auto-generating PDF for analysis:', paper.arxiv_id);
+    
+    // PDF 생성 단계로 업데이트
+    setProgressStep(4);
+    
+    try {
+      const response = await fetch('/api/v1/pdf/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          arxiv_id: paper.arxiv_id,
+          title: paper.title,
+          analysis: analysisData
+        })
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        
+        // PDF 뷰어에 자동으로 로드
+        const event = new CustomEvent('loadPdf', { 
+          detail: { 
+            url: url, 
+            name: `analysis_${paper.arxiv_id.replace('/', '_')}.pdf`,
+            title: paper.title
+          } 
+        });
+        window.dispatchEvent(event);
+        
+        console.log('DEBUG: PDF auto-generated and loaded');
+        
+        // PDF 뷰어 탭으로 자동 전환
+        const pdfTab = document.querySelector('[data-tab="pdf-viewer"]');
+        if (pdfTab) {
+          pdfTab.click();
+        }
+        
+      } else {
+        throw new Error('PDF 생성 실패');
+      }
+    } catch (error) {
+      console.error('ERROR: Auto PDF generation failed:', error);
+      alert('PDF 생성에 실패했습니다.');
+    }
+  };
+
   return (
     <div className="PaperCard">
       <h3 className="PaperTitle">{paper.title}</h3>
@@ -49,62 +134,19 @@ const PaperCard = ({ paper }) => {
           📄 PDF 보기
         </a>
         <button onClick={handleAnalyze} disabled={analyzing} className="AnalyzeButton">
-          {analyzing ? '🤖 분석 중...' : '🧠 AI 분석하기'}
+          {analyzing ? '🤖 분석 중... PDF 생성 중...' : '🧠 AI 분석 → PDF 생성'}
         </button>
-        {showAnalysis && (
-          <button onClick={() => setShowAnalysis(!showAnalysis)} className="ToggleButton">
-            {showAnalysis ? '분석 숨기기' : '분석 보기'}
-          </button>
-        )}
       </div>
       
       {analyzing && (
         <div className="AnalyzingSection">
-          <p>🤖 AI가 논문을 분석하고 있습니다...</p>
-        </div>
-      )}
-      
-      {showAnalysis && parsedAnalysis && (
-        <div className="StructuredAnalysis">
-          <h4>🤖 AI 분석 결과</h4>
-          
-          <div className="BackgroundSection">
-            <h5>🎯 배경 및 문제 정의</h5>
-            <p><strong>문제:</strong> {parsedAnalysis.background?.problem_definition || '분석 중...'}</p>
-            <p><strong>동기:</strong> {parsedAnalysis.background?.motivation || '분석 중...'}</p>
-          </div>
-          
-          <div className="ContributionsSection">
-            <h5>💡 주요 기여</h5>
-            <ul>
-              {parsedAnalysis.contributions?.map((contrib, idx) => (
-                <li key={idx}>{contrib}</li>
-              )) || [
-                <li key="default">주요 기여사항을 분석하고 있습니다...</li>
-              ]}
-            </ul>
-          </div>
-          
-          <div className="MethodologySection">
-            <h5>🔬 방법론</h5>
-            <p><strong>접근법:</strong> {parsedAnalysis.methodology?.approach || '분석 중...'}</p>
-            <p><strong>데이터셋:</strong> {parsedAnalysis.methodology?.datasets || '분석 중...'}</p>
-          </div>
-          
-          {parsedAnalysis.results && (
-            <div className="ResultsSection">
-              <h5>📊 결과</h5>
-              <p><strong>주요 발견:</strong> {parsedAnalysis.results.key_findings}</p>
-              <p><strong>성능:</strong> {parsedAnalysis.results.performance}</p>
+          <div className="LoadingSpinner">
+            <div className="Spinner"></div>
+            <p>🤖 AI가 논문을 분석하고 PDF를 생성하고 있습니다...</p>
+            <div className="ProgressText">
+              {progressSteps[progressStep]?.text}
             </div>
-          )}
-        </div>
-      )}
-      
-      {showAnalysis && analysis && !parsedAnalysis && (
-        <div className="RawAnalysisSection">
-          <h4>🤖 AI 분석 결과 (원문)</h4>
-          <pre>{analysis}</pre>
+          </div>
         </div>
       )}
     </div>

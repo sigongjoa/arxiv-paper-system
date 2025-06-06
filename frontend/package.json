@@ -1,19 +1,40 @@
 {
-  "name": "arxiv-frontend",
-  "version": "1.0.0",
+  "name": "enhanced-arxiv-frontend",
+  "version": "2.0.0",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "axios": "^1.6.0",
-    "react-router-dom": "^6.8.0"
+    "react-router-dom": "^6.8.0",
+    "react-query": "^3.39.3",
+    "zustand": "^4.4.7",
+    "framer-motion": "^10.16.4",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0",
+    "react-hot-toast": "^2.4.1",
+    "date-fns": "^2.30.0",
+    "recharts": "^2.8.0",
+    "react-window": "^1.8.8",
+    "react-virtualized-auto-sizer": "^1.0.24"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "analyze": "npm run build && npx bundle-analyzer build/static/js/*.js",
+    "lint": "eslint src --ext .js,.jsx",
+    "format": "prettier --write src/**/*.{js,jsx,css,md}"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.5.1",
+    "eslint": "^8.53.0",
+    "eslint-config-react-app": "^7.0.1",
+    "prettier": "^3.0.3"
   },
   "browserslist": {
     "production": [
@@ -26,5 +47,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "proxy": "http://localhost:8000"
 }

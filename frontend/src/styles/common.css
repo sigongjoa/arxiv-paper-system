@@ -1,3 +1,24 @@
+@font-face {
+  font-family: 'NanumGothic';
+  src: url('../assets/fonts/NanumGothic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'NanumGothic';
+  src: url('../assets/fonts/NanumGothic-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'NanumGothic';
+  src: url('../assets/fonts/NanumGothic-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+
 :root {
   --primary: #0070f3;
   --primary-dark: #0065db;
@@ -20,7 +41,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'NanumGothic', 'Inter', 'Malgun Gothic', '맑은 고딕', sans-serif;
   background-color: #f8fafc;
   color: var(--text);
   line-height: 1.6;
@@ -158,15 +179,70 @@ body {
   color: white;
 }
 
+.Button--success:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .Button--danger {
   background-color: var(--danger);
   color: white;
+}
+
+.PdfGenerateButton {
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  margin-left: 0.5rem;
+}
+
+.PdfGenerateButton:hover {
+  background-color: #7c3aed;
+}
+
+.PdfGenerateButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .Grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
+  align-items: stretch;
+}
+
+.PaperCard {
+  background-color: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.PaperCardBody {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.PaperContent {
+  flex: 1;
+}
+
+.PaperActions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
 }
 
 .Loading {

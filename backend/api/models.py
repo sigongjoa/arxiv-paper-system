@@ -5,6 +5,7 @@ from datetime import datetime
 class PaperResponse(BaseModel):
     id: int
     arxiv_id: str
+    platform: str
     title: str
     abstract: Optional[str]
     authors: str
@@ -13,6 +14,7 @@ class PaperResponse(BaseModel):
     published_date: Optional[datetime]
     structured_summary: Optional[str]
     created_at: Optional[datetime]
+    crawled: Optional[str]
 
 class SearchRequest(BaseModel):
     query: str
