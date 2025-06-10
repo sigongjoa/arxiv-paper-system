@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MultiPlatformSelector from './MultiPlatformSelector';
+import { systemAPI, paperAPI } from '../utils/api';
 import './CrawlingSystem.css';
 
 const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
@@ -22,13 +23,13 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
     const loadPlatformStatus = async () => {
         try {
             const [platformsRes, statusRes] = await Promise.all([
-                fetch('/api/v1/platforms'),
-                fetch('/api/v1/crawling-status')
+                systemAPI.getPlatforms(),
+                systemAPI.getCrawlingStatus()
             ]);
             
-            if (platformsRes.ok && statusRes.ok) {
-                const platformsData = await platformsRes.json();
-                const statusData = await statusRes.json();
+            if (platformsRes.data && statusRes.data) {
+                const platformsData = platformsRes.data;
+                const statusData = statusRes.data;
                 setPlatforms(platformsData.platforms || {});
                 setStatusMessage(`Platform Status: ${statusData.active_platforms}/${statusData.total_platforms} active`);
             }
@@ -46,13 +47,9 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
         const crawlStartTime = new Date().toISOString();
         
         try {
-            const response = await fetch('/api/v1/multi-crawl', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(crawlRequest)
-            });
+            const response = await systemAPI.multiCrawl(crawlRequest);
             
-            const result = await response.json();
+            const result = response.data;
             
             if (result.status === 'success') {
                 setCrawlResults(result);
@@ -76,18 +73,14 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
         setStatusMessage('arXiv crawling in progress...');
         
         try {
-            const response = await fetch('/api/v1/crawl', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    domain: 'cs',
-                    category: 'cs.AI',
-                    days_back: 0,
-                    limit: 20
-                })
+            const response = await paperAPI.crawlPapers({
+                domain: 'cs',
+                category: 'cs.AI',
+                days_back: 0,
+                limit: 20
             });
             
-            const result = await response.json();
+            const result = response.data;
             setStatusMessage(result.status === 'success' ? 
                 `arXiv crawling completed: ${result.saved_count} papers saved` : 
                 `arXiv crawling failed: ${result.error}`);
@@ -103,17 +96,13 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
         setStatusMessage('RSS crawling in progress...');
         
         try {
-            const response = await fetch('/api/v1/crawl-rss', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    domain: 'cs',
-                    category: 'cs.AI',
-                    limit: 20
-                })
+            const response = await paperAPI.crawlPapersRSS({
+                domain: 'cs',
+                category: 'cs.AI',
+                limit: 20
             });
             
-            const result = await response.json();
+            const result = response.data;
             setStatusMessage(result.status === 'success' ? 
                 `RSS crawling completed: ${result.saved_count} papers saved` : 
                 `RSS crawling failed: ${result.error}`);
@@ -126,8 +115,8 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
 
     const loadRecentPapers = async () => {
         try {
-            const response = await fetch('/api/v1/papers?domain=all&days_back=0&limit=50');
-            const papersData = await response.json();
+            const response = await paperAPI.getPapers('all', 0, 50);
+            const papersData = response.data;
             console.info('Recent papers loaded:', papersData.length);
             setPapers(Array.isArray(papersData) ? papersData : []);
             setStatusMessage(`${Array.isArray(papersData) ? papersData.length : 0} 방금 크롤링된 논문 로드됨`);
@@ -145,8 +134,8 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
             console.log('=== 디버깅 시작 ===');
             console.log('크롤링 시작 시간:', startTime);
             
-            const response = await fetch('/api/v1/papers?domain=all&days_back=0&limit=50');
-            const papersData = await response.json();
+            const response = await paperAPI.getPapers('all', 0, 50);
+            const papersData = response.data;
             
             console.log('API에서 받은 총 논문 수:', papersData.length);
             console.log('첫 번째 논문:', papersData[0]);

@@ -15,12 +15,12 @@ class PLOSCrawler:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-        logging.error("PLOS crawler initialized")
+        logging.info("PLOS crawler initialized")
 
     def crawl_papers(self, categories=None, start_date=None, end_date=None, limit=20):
         """PLOS 논문 크롤링"""
         try:
-            logging.error(f"PLOS: Starting crawl - categories={categories}, limit={limit}")
+            logging.info(f"PLOS: Starting crawl - categories={categories}, limit={limit}")
             papers = []
             
             # 검색 쿼리 구성
@@ -53,7 +53,7 @@ class PLOSCrawler:
             
             query = ' AND '.join(query_parts)
             
-            logging.error(f"PLOS: Search query: {query}")
+            logging.info(f"PLOS: Search query: {query}")
             
             # API 요청
             params = {
@@ -65,27 +65,27 @@ class PLOSCrawler:
                 'fq': 'article_type:"Research Article" OR article_type:"Review"'
             }
             
-            logging.error(f"PLOS: API URL: {self.base_url}")
+            logging.info(f"PLOS: API URL: {self.base_url}")
             response = self.session.get(self.base_url, params=params, timeout=60)  # 60초로 증가
             response.raise_for_status()
             
             data = response.json()
-            logging.error(f"PLOS: API response - status={response.status_code}, keys={list(data.keys())}")
+            logging.debug(f"PLOS: API response - status={response.status_code}, keys={list(data.keys())}")
             
             if 'response' in data and 'docs' in data['response']:
                 docs = data['response']['docs']
-                logging.error(f"PLOS: Found {len(docs)} papers")
+                logging.info(f"PLOS: Found {len(docs)} papers")
                 for doc in docs:
                     paper = self._parse_paper(doc)
                     if paper:
                         papers.append(paper)
-                        logging.error(f"PLOS: Yielding paper: {paper.title[:50]}...")
+                        logging.debug(f"PLOS: Yielding paper: {paper.title[:50]}...")
                         yield paper
                         
                     if len(papers) >= limit:
                         break
             else:
-                logging.error(f"PLOS: No 'response' or 'docs' in API response")
+                logging.warning(f"PLOS: No 'response' or 'docs' in API response")
                         
         except Exception as e:
             logging.error(f"PLOS crawl error: {e}")

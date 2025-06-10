@@ -10,7 +10,7 @@ class PdfCopyService:
         self.source_dir = "D:\\arxiv-paper-system\\backend\\output\\pdfs"
         self.target_dir = "D:\\arxiv-paper-system\\pdfs"
         os.makedirs(self.target_dir, exist_ok=True)
-        logger.error(f"DEBUG: PdfCopyService initialized - source: {self.source_dir}, target: {self.target_dir}")
+        logger.debug(f"PdfCopyService initialized - source: {self.source_dir}, target: {self.target_dir}")
     
     def copy_new_pdfs(self):
         copied_count = 0
@@ -23,11 +23,11 @@ class PdfCopyService:
                 if not os.path.exists(target_path):
                     shutil.copy2(source_path, target_path)
                     copied_count += 1
-                    logger.error(f"DEBUG: Copied {filename} to target directory")
+                    logger.debug(f"Copied {filename} to target directory")
         
-        logger.error(f"DEBUG: Copied {copied_count} new PDF files")
+        logger.debug(f"Copied {copied_count} new PDF files")
         return copied_count
     
     def sync_directories(self):
         self.copy_new_pdfs()
-        logger.error(f"DEBUG: Directory sync completed at {datetime.now()}")
+        logger.debug(f"Directory sync completed at {datetime.now()}")

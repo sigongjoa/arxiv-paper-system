@@ -2,6 +2,7 @@ import requests
 import time
 import logging
 from urllib.parse import quote
+import feedparser
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -34,4 +35,21 @@ class ArxivClient:
             raise Exception(f"ArXiv API error: {response.status_code}")
         
         print(f"DEBUG: ArXiv response received, length={len(response.text)}")
-        return response.text
+        
+        feed = feedparser.parse(response.text)
+        papers = []
+        
+        for entry in feed.entries:
+            paper = {
+                'arxiv_id': entry.id.split('/')[-1] if hasattr(entry, 'id') else None,
+                'title': entry.title if hasattr(entry, 'title') else None,
+                'abstract': entry.summary if hasattr(entry, 'summary') else None,
+                'authors': [author.name for author in entry.authors] if hasattr(entry, 'authors') else [],
+                'categories': [tag.term for tag in entry.tags] if hasattr(entry, 'tags') else [],
+                'pdf_url': next((link.href for link in entry.links if link.type == 'application/pdf'), None) if hasattr(entry, 'links') else None,
+                'published_date': entry.published if hasattr(entry, 'published') else None
+            }
+            papers.append(paper)
+        
+        logging.info(f"Retrieved {len(papers)} papers from arXiv")
+        return papers

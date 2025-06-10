@@ -1,148 +1,100 @@
-import sqlite3
-import json
 from datetime import datetime
 from typing import List, Optional
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
 from .models import Paper
+from .database import engine, create_tables # SQLAlchemy engine과 create_tables 함수 임포트
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PaperDatabase:
-    def __init__(self, db_path: str = "papers.db"):
-        self.db_path = db_path
-        self.init_db()
+    def __init__(self):
+        # 데이터베이스 파일 경로 설정은 database.py의 Config에서 관리되므로 여기서는 제거
+        # init_db는 create_tables 함수가 대신하므로 제거
+        create_tables(engine) # 테이블이 존재하지 않으면 생성
+        logger.info("PaperDatabase initialized with SQLAlchemy.")
     
-    def init_db(self):
-        """데이터베이스 테이블 초기화"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS papers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                arxiv_id TEXT UNIQUE NOT NULL,
-                title TEXT NOT NULL,
-                abstract TEXT,
-                authors TEXT,
-                categories TEXT,
-                pdf_url TEXT,
-                published_date TEXT,
-                updated_date TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        conn.commit()
-        conn.close()
+    def get_session(self) -> Session:
+        SessionLocal = Session(bind=engine)
+        return SessionLocal
     
     def save_paper(self, paper: Paper) -> bool:
         """논문 저장, 중복시 False 반환"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
+        session = self.get_session()
         try:
-            cursor.execute('''
-                INSERT INTO papers (arxiv_id, title, abstract, authors, categories, pdf_url, published_date, updated_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                paper.arxiv_id,
-                paper.title,
-                paper.abstract,
-                json.dumps(paper.authors),
-                json.dumps(paper.categories),
-                paper.pdf_url,
-                paper.published_date.isoformat(),
-                paper.updated_date.isoformat()
-            ))
-            conn.commit()
+            session.add(paper)
+            session.commit()
+            session.refresh(paper)
+            logger.info(f"Saved paper: {paper.paper_id}")
             return True
-        except sqlite3.IntegrityError:
+        except IntegrityError:
+            session.rollback()
+            logger.warning(f"Skipped duplicate paper: {paper.paper_id}")
+            return False
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error saving paper {paper.paper_id}: {e}")
             return False
         finally:
-            conn.close()
+            session.close()
     
-    def get_paper_by_id(self, arxiv_id: str) -> Optional[Paper]:
-        """arXiv ID로 논문 조회"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT * FROM papers WHERE arxiv_id = ?', (arxiv_id,))
-        row = cursor.fetchone()
-        conn.close()
-        
-        if row:
-            return self._row_to_paper(row)
-        return None
+    def get_paper_by_id(self, paper_id: str) -> Optional[Paper]:
+        """ID로 논문 조회"""
+        session = self.get_session()
+        try:
+            return session.query(Paper).filter_by(paper_id=paper_id).first()
+        finally:
+            session.close()
     
-    def get_papers_by_date_range(self, start_date: datetime, end_date: datetime, limit: int = 100) -> List[Paper]:
+    def get_papers_by_date_range(self, start_date: datetime, end_date: datetime, limit: Optional[int] = None) -> List[Paper]:
         """날짜 범위로 논문 조회"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        session = self.get_session()
+        try:
+            query = session.query(Paper)
+            query = query.filter(Paper.updated_date.between(start_date, end_date))
+            query = query.order_by(Paper.updated_date.desc())
+            if limit is not None:
+                query = query.limit(limit)
+
+            papers = query.all()
+            logger.info(f"DB returned {len(papers)} papers for date range {start_date} to {end_date}")
         
-        print(f"DEBUG: DB query range: {start_date.isoformat()} to {end_date.isoformat()}")
+            # 전체 논문 수도 확인 (디버깅 목적)
+            total_count = session.query(Paper).count()
+            logger.info(f"Total papers in DB: {total_count}")
         
-        cursor.execute('''
-            SELECT * FROM papers 
-            WHERE updated_date BETWEEN ? AND ? 
-            ORDER BY updated_date DESC 
-            LIMIT ?
-        ''', (start_date.isoformat(), end_date.isoformat(), limit))
-        
-        rows = cursor.fetchall()
-        print(f"DEBUG: DB returned {len(rows)} papers")
-        
-        # 전체 논문 수도 확인
-        cursor.execute('SELECT COUNT(*) FROM papers')
-        total_count = cursor.fetchone()[0]
-        print(f"DEBUG: Total papers in DB: {total_count}")
-        
-        # 최근 3개 논문의 날짜 확인
-        cursor.execute('SELECT arxiv_id, updated_date FROM papers ORDER BY updated_date DESC LIMIT 3')
-        recent = cursor.fetchall()
-        print(f"DEBUG: Recent papers: {recent}")
-        
-        conn.close()
-        
-        return [self._row_to_paper(row) for row in rows]
+            # 최근 3개 논문의 날짜 확인 (디버깅 목적)
+            recent_papers = session.query(Paper).order_by(Paper.updated_date.desc()).limit(3).all()
+            logger.info(f"Recent papers (top 3): {[p.paper_id for p in recent_papers]}")
+
+            return papers
+        finally:
+            session.close()
     
     def search_papers(self, query: str, category: str = None, limit: int = 100) -> List[Paper]:
         """제목/초록으로 논문 검색"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        sql = 'SELECT * FROM papers WHERE (title LIKE ? OR abstract LIKE ?)'
-        params = [f'%{query}%', f'%{query}%']
-        
-        if category:
-            sql += ' AND categories LIKE ?'
-            params.append(f'%{category}%')
-        
-        sql += ' ORDER BY updated_date DESC LIMIT ?'
-        params.append(limit)
-        
-        cursor.execute(sql, params)
-        rows = cursor.fetchall()
-        conn.close()
-        
-        return [self._row_to_paper(row) for row in rows]
+        session = self.get_session()
+        try:
+            search_query = f"%{query}%"
+            query_obj = session.query(Paper).filter(
+                (Paper.title.like(search_query)) | (Paper.abstract.like(search_query))
+            )
+
+            if category:
+                category_search = f"%\"%s\"%" % category # JSONB like for array
+                query_obj = query_obj.filter(Paper.categories.like(category_search))
+            
+            query_obj = query_obj.order_by(Paper.updated_date.desc()).limit(limit)
+            return query_obj.all()
+        finally:
+            session.close()
     
     def get_total_count(self) -> int:
         """총 논문 수"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute('SELECT COUNT(*) FROM papers')
-        count = cursor.fetchone()[0]
-        conn.close()
-        
-        return count
-    
-    def _row_to_paper(self, row) -> Paper:
-        """DB row를 Paper 객체로 변환"""
-        return Paper(
-            arxiv_id=row[1],
-            title=row[2],
-            abstract=row[3],
-            authors=json.loads(row[4]) if row[4] else [],
-            categories=json.loads(row[5]) if row[5] else [],
-            pdf_url=row[6],
-            published_date=datetime.fromisoformat(row[7]),
-            updated_date=datetime.fromisoformat(row[8])
-        )
+        session = self.get_session()
+        try:
+            return session.query(Paper).count()
+        finally:
+            session.close()

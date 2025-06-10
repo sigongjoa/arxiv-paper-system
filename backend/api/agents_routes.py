@@ -7,13 +7,12 @@ from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
 import json
 import time
+import os
 
-from ..agents import (
-    AgentOrchestrator, 
-    LMStudioConfig,
-    ResearchQuery,
-    WorkflowStatus
-)
+from backend.agents import LMStudioConfig, ResearchQuery, WorkflowStatus
+from backend.agents.agent_orchestrator import AgentOrchestrator
+from backend.core.config import Config
+from backend.core.database import get_db, Paper
 
 logger = logging.getLogger(__name__)
 
@@ -218,41 +217,36 @@ async def comprehensive_research_analysis(
     background_tasks: BackgroundTasks,
     orchestrator_instance: AgentOrchestrator = Depends(get_orchestrator)
 ):
-    """포괄적 연구 분석"""
+    """종합 연구 분석을 시작합니다 (백그라운드 작업으로 실행)."""
     try:
-        logger.info(f"포괄적 연구 분석 요청: {len(request.papers)}개 논문")
+        logger.info(f"종합 연구 분석 요청: {len(request.papers)}개 논문, 관심사: {request.research_interests}")
         start_time = time.time()
-        
-        result = await orchestrator_instance.comprehensive_research_analysis(
-            request.papers,
-            request.research_interests
-        )
-        
+
+        # 백그라운드에서 실행될 실제 작업 함수
+        async def _run_analysis():
+            try:
+                # WorkflowStatus를 사용 (가져왔으므로 사용 가능)
+                await orchestrator_instance.run_comprehensive_analysis(
+                    request.papers,
+                    request.research_interests
+                )
+                logger.info("종합 연구 분석 백그라운드 작업 완료")
+            except Exception as bg_e:
+                logger.error(f"백그라운드 종합 연구 분석 실패: {bg_e}", exc_info=True)
+
+        background_tasks.add_task(_run_analysis)
+
         execution_time = time.time() - start_time
-        
+
         return AgentResponse(
             success=True,
-            data={
-                "workflow_id": result.workflow_id,
-                "tasks": [
-                    {
-                        "task_id": task.task_id,
-                        "task_type": task.task_type,
-                        "status": task.status.value,
-                        "progress": task.progress,
-                        "execution_time": (task.end_time - task.start_time) if task.end_time and task.start_time else None
-                    }
-                    for task in result.tasks
-                ],
-                "summary": result.summary,
-                "success_rate": result.success_rate,
-                "total_execution_time": result.total_execution_time
-            },
+            data={"message": "종합 연구 분석이 백그라운드에서 시작되었습니다.",
+                  "workflow_status_check_url": f"/api/agents/status"},
             execution_time=execution_time
         )
-        
+
     except Exception as e:
-        logger.error(f"포괄적 연구 분석 실패: {e}", exc_info=True)
+        logger.error(f"종합 연구 분석 시작 실패: {e}", exc_info=True)
         return AgentResponse(
             success=False,
             error=str(e)
@@ -262,20 +256,15 @@ async def comprehensive_research_analysis(
 async def get_available_models(
     orchestrator_instance: AgentOrchestrator = Depends(get_orchestrator)
 ):
-    """사용 가능한 LM Studio 모델 목록"""
+    """사용 가능한 LLM 모델 목록 조회"""
     try:
-        if not orchestrator_instance.llm_client:
-            raise HTTPException(status_code=503, detail="LLM 클라이언트가 초기화되지 않음")
-        
-        models = orchestrator_instance.llm_client.get_available_models()
-        
+        models = await orchestrator_instance.get_available_models()
         return AgentResponse(
             success=True,
             data={"models": models}
         )
-        
     except Exception as e:
-        logger.error(f"모델 목록 조회 실패: {e}", exc_info=True)
+        logger.error(f"사용 가능한 모델 조회 실패: {e}", exc_info=True)
         return AgentResponse(
             success=False,
             error=str(e)
@@ -287,88 +276,41 @@ async def test_lm_studio_connection(config: LMStudioConfigRequest):
     try:
         logger.info(f"LM Studio 연결 테스트: {config.base_url}")
         
-        from ..agents.lm_studio_client import LMStudioClient, LMStudioConfig
-        
         test_config = LMStudioConfig(
             base_url=config.base_url,
             model_name=config.model_name,
             max_tokens=config.max_tokens,
             temperature=config.temperature
         )
+        client = LMStudioClient(config=test_config)
         
-        test_client = LMStudioClient(test_config)
-        connection_status = test_client.check_connection()
-        
-        if connection_status:
-            models = test_client.get_available_models()
-            return AgentResponse(
-                success=True,
-                data={
-                    "connection": "success",
-                    "available_models": models,
-                    "config": config.dict()
-                }
-            )
-        else:
-            return AgentResponse(
-                success=False,
-                error="LM Studio 연결 실패"
-            )
-        
+        response = await client.test_connection()
+        return AgentResponse(success=True, data={"message": response})
     except Exception as e:
-        logger.error(f"연결 테스트 실패: {e}", exc_info=True)
-        return AgentResponse(
-            success=False,
-            error=str(e)
-        )
+        logger.error(f"LM Studio 연결 테스트 실패: {e}", exc_info=True)
+        return AgentResponse(success=False, error=str(e))
 
 @router.delete("/shutdown", response_model=AgentResponse)
-async def shutdown_agents():
+async def shutdown_agents(
+    orchestrator_instance: AgentOrchestrator = Depends(get_orchestrator)
+):
     """AI 에이전트 시스템 종료"""
     global orchestrator
     try:
-        if orchestrator:
-            await orchestrator.shutdown()
-            orchestrator = None
-        
-        return AgentResponse(
-            success=True,
-            data={"message": "AI 에이전트 시스템 종료 완료"}
-        )
-        
+        await orchestrator_instance.shutdown()
+        orchestrator = None # 전역 인스턴스 초기화
+        logger.info("AI 에이전트 시스템 종료 완료")
+        return AgentResponse(success=True, data={"message": "AI 에이전트 시스템 종료 완료"})
     except Exception as e:
-        logger.error(f"시스템 종료 실패: {e}", exc_info=True)
-        return AgentResponse(
-            success=False,
-            error=str(e)
-        )
+        logger.error(f"AI 에이전트 시스템 종료 실패: {e}", exc_info=True)
+        return AgentResponse(success=False, error=str(e))
 
-# 디버그용 엔드포인트
 @router.get("/debug/logs")
 async def get_debug_logs():
     """디버그 로그 조회"""
-    try:
-        # 간단한 시스템 정보 반환
-        debug_info = {
-            "orchestrator_initialized": orchestrator is not None,
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "system_info": {
-                "agents_module_loaded": True,
-                "api_routes_active": True
-            }
-        }
-        
-        if orchestrator:
-            debug_info["system_status"] = orchestrator.get_system_status()
-        
-        return AgentResponse(
-            success=True,
-            data=debug_info
-        )
-        
-    except Exception as e:
-        logger.error(f"디버그 로그 조회 실패: {e}", exc_info=True)
-        return AgentResponse(
-            success=False,
-            error=str(e)
-        )
+    log_file_path = "debug_log.txt"
+    if os.path.exists(log_file_path):
+        with open(log_file_path, "r", encoding="utf-8") as f:
+            logs = f.read()
+        return {"logs": logs}
+    return {"logs": "로그 파일 없음"}

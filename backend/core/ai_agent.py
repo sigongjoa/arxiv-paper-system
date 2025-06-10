@@ -4,14 +4,14 @@ import json
 import asyncio
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from core.config import LLM_API_URL
-from core.database import DatabaseManager
+from core.config import Config
+from core.paper_database import PaperDatabase as DatabaseManager
 
 logger = logging.getLogger(__name__)
 
 class AIAgent:
     def __init__(self):
-        self.base_url = LLM_API_URL
+        self.base_url = Config.LM_STUDIO_BASE_URL
         self.db = DatabaseManager()
         self.conversation_history = {}
         

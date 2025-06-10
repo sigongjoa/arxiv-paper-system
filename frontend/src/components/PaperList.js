@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { paperAPI } from '../utils/api';
+import { paperAPI, citationAPI, systemAPI } from '../utils/api';
 import { ARXIV_CATEGORIES } from '../utils/categories';
 import EnhancedPaperCard from './EnhancedPaperCard';
 import MultiPlatformSelector from './MultiPlatformSelector';
@@ -225,25 +225,21 @@ const PaperList = () => {
 
   const handleCitationAnalysis = async (arxivId) => {
     try {
-      const extractResponse = await fetch(`/api/citation/extract/${arxivId}`, {
-        method: 'POST'
-      });
+      const extractResponse = await citationAPI.extractCitationData(arxivId);
       
-      if (!extractResponse.ok) {
+      if (!extractResponse.data?.success) {
         throw new Error('Citation extraction failed');
       }
       
-      const analysisResponse = await fetch(`/api/citation/analysis/${arxivId}`);
-      const analysisData = await analysisResponse.json();
+      const analysisResponse = await citationAPI.analyzeCitationPatterns(arxivId);
+      const analysisData = analysisResponse.data;
       
       if (analysisData?.error) {
         throw new Error(analysisData.error);
       }
       
-      const saveResponse = await fetch(`/api/citation/save-analysis/${arxivId}`, {
-        method: 'POST'
-      });
-      const saveResult = await saveResponse.json();
+      const saveResponse = await citationAPI.saveCitationAnalysis(arxivId, analysisData);
+      const saveResult = saveResponse.data;
       
       if (saveResult?.success) {
         alert('🔗 인용 분석이 완료되어 Notion에 저장되었습니다!');
@@ -281,38 +277,30 @@ const PaperList = () => {
     
     safeSetState(setLoading, true);
     try {
-      const response = await fetch('/api/enhanced/smart-crawl', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domain: filters.domain,
-          category: filters.category === 'all' ? null : filters.category,
-          max_papers: filters.maxResults,
-          quality_threshold: 75
-        })
+      const response = await systemAPI.smartCrawl({
+        domain: filters.domain,
+        category: filters.category === 'all' ? null : filters.category,
+        days_back: 0,
+        limit: filters.maxResults
       });
       
-      if (!response.ok) {
-        throw new Error('Smart crawling failed');
+      if (response?.data?.status === 'success') {
+        const newPapers = Array.isArray(response.data.papers) ? response.data.papers : [];
+        if (newPapers.length > 0) {
+          safeSetState(setPapers, prev => {
+            const existingIds = new Set((prev || []).map(p => p?.arxiv_id || p?.id).filter(Boolean));
+            return [...newPapers.filter(p => p && !existingIds.has(p.arxiv_id || p.id)), ...prev];
+          });
+        }
+        showNotification('✅ Smart Crawl 완료!');
+      } else {
+        const errorMsg = response?.data?.error || 'Smart Crawl 실패';
+        safeSetState(setError, 'Smart Crawl 실패: ' + errorMsg);
       }
-      
-      const result = await response.json();
-      console.log('스마트 크롤링 결과:', result);
-      
-      if (Array.isArray(result?.papers) && result.papers.length > 0) {
-        safeSetState(setPapers, prev => {
-          const existingIds = new Set((prev || []).map(p => p?.arxiv_id || p?.id).filter(Boolean));
-          const newPapers = result.papers.filter(p => p && !existingIds.has(p.arxiv_id || p.id));
-          return [...newPapers, ...prev];
-        });
-      }
-      
-      const count = result?.high_quality_papers || result?.papers?.length || 0;
-      alert(`🤖 스마트 크롤링 완료! ${count}개의 고품질 논문을 발견했습니다.`);
-      
     } catch (err) {
-      console.error('스마트 크롤링 에러:', err);
-      safeSetState(setError, '스마트 크롤링 실패: ' + (err?.message || '알 수 없는 오류'));
+      console.error('Smart Crawl 에러:', err);
+      const errorMsg = err?.response?.data?.detail || err?.message || 'Smart Crawl 실패';
+      safeSetState(setError, 'Smart Crawl 실패: ' + errorMsg);
     } finally {
       safeSetState(setLoading, false);
     }
@@ -320,43 +308,25 @@ const PaperList = () => {
 
   const handleMultiPlatformCrawl = async (crawlRequest) => {
     safeSetState(setLoading, true);
-    safeSetState(setError, '');
-    
     try {
-      const response = await fetch('/api/v1/multi/crawl', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(crawlRequest)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Multi-platform crawling failed');
-      }
-      
-      const result = await response.json();
-      
-      if (result?.success) {
-        console.log('크롤링 결과:', result);
-        
-        if (Array.isArray(result?.papers) && result.papers.length > 0) {
+      const response = await paperAPI.multiCrawl(crawlRequest.domain, crawlRequest.days_back, crawlRequest.category, crawlRequest.limit);
+      if (response?.data?.status === 'success') {
+        const newPapers = Array.isArray(response.data.papers) ? response.data.papers : [];
+        if (newPapers.length > 0) {
           safeSetState(setPapers, prev => {
             const existingIds = new Set((prev || []).map(p => p?.arxiv_id || p?.id).filter(Boolean));
-            const newPapers = result.papers.filter(p => p && !existingIds.has(p.arxiv_id || p.id));
-            return [...newPapers, ...prev];
+            return [...newPapers.filter(p => p && !existingIds.has(p.arxiv_id || p.id)), ...prev];
           });
         }
-        
-        const count = result?.total_saved || result?.papers?.length || 0;
-        const platforms = Array.isArray(result?.platforms_crawled) ? result.platforms_crawled.join(', ') : '다중 플랫폼';
-        showNotification(`🌐 다중 플랫폼 크롤링 완료! ${count}개 논문 저장됨 (${platforms})`);
-        
-        safeSetState(setShowMultiPlatform, false);
+        showNotification(`✅ 멀티플랫폼 크롤링 완료! ${response.data.saved_count || 0}개 논문 저장됨`);
       } else {
-        safeSetState(setError, '다중 플랫폼 크롤링 실패: ' + (result?.error || '알 수 없는 오류'));
+        const errorMsg = response?.data?.error || '멀티플랫폼 크롤링 실패';
+        safeSetState(setError, '멀티플랫폼 크롤링 실패: ' + errorMsg);
       }
     } catch (err) {
-      console.error('크롤링 에러:', err);
-      safeSetState(setError, '다중 플랫폼 크롤링 실패: ' + (err?.message || '알 수 없는 오류'));
+      console.error('Multi-platform crawl error:', err);
+      const errorMsg = err?.response?.data?.detail || err?.message || '멀티플랫폼 크롤링 실패';
+      safeSetState(setError, '멀티플랫폼 크롤링 실패: ' + errorMsg);
     } finally {
       safeSetState(setLoading, false);
     }

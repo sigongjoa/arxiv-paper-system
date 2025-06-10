@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { aiAPI } from '../../utils/api';
 
 const CitationNetworkPanel = () => {
   const [papers, setPapers] = useState([]);
@@ -45,15 +46,9 @@ const CitationNetworkPanel = () => {
     setNetworkAnalysis(null);
 
     try {
-      const response = await fetch('/api/agents/analyze/citation-network', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(papers)
-      });
+      const response = await aiAPI.analyzeCitationNetworkAgents(papers);
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setNetworkAnalysis(data.data.network_analysis);

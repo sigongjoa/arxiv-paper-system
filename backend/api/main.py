@@ -12,12 +12,13 @@ print(f"DEBUG: Loading env from: {env_path}")
 load_dotenv(env_path)
 print(f"DEBUG: EMAIL_TEST_MODE = {os.getenv('EMAIL_TEST_MODE')}")
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import List, Optional
 from api.routes import router
 try:
     from api.enhanced_routes import router as enhanced_router
@@ -55,6 +56,14 @@ try:
 except ImportError as e:
     print(f"WARNING: Category routes not available: {e}")
     category_routes_available = False
+
+from core.faiss_manager import FAISSManager
+from core.paper_database import PaperDatabase
+from core.models import Paper
+from core.llm_reranker import LLMReranker
+
+faiss_manager: Optional[FAISSManager] = None
+llm_reranker: Optional[LLMReranker] = None
 
 logging.basicConfig(level=logging.INFO)
 
@@ -97,9 +106,9 @@ if multi_platform_available:
     async def get_papers(domain: str = "all", days_back: int = 1, limit: int = 50):
         """논문 조회 API"""
         try:
-            from core.database import DatabaseManager
+            from core.paper_database import PaperDatabase
             from datetime import timedelta
-            db = DatabaseManager()
+            db = PaperDatabase()
             papers = db.get_papers_by_date_range(datetime.now() - timedelta(days=days_back), datetime.now(), limit)
             result = []
             for p in papers:
@@ -123,7 +132,6 @@ if multi_platform_available:
     
     # 기본 크롤링 API
     from pydantic import BaseModel
-    from typing import Optional
     
     class CrawlRequest(BaseModel):
         domain: str
@@ -136,25 +144,14 @@ if multi_platform_available:
         """기본 arXiv 크롤링"""
         try:
             from api.crawling.arxiv_crawler import ArxivCrawler
-            from core.database import DatabaseManager
+            from core.paper_database import PaperDatabase
             
             crawler = ArxivCrawler()
-            db = DatabaseManager()
+            db = PaperDatabase()
             
             count = 0
             for paper in crawler.crawl_papers([request.category] if request.category else [], None, None, request.limit):
-                paper_data = {
-                    'paper_id': paper.paper_id,
-                    'platform': paper.platform,
-                    'title': paper.title,
-                    'abstract': paper.abstract,
-                    'authors': paper.authors,
-                    'categories': paper.categories,
-                    'pdf_url': paper.pdf_url,
-                    'published_date': paper.published_date,
-                    'created_at': datetime.now()
-                }
-                db.save_paper(paper_data)
+                db.save_paper(paper)
                 count += 1
             
             return {"status": "success", "saved_count": count}
@@ -169,25 +166,14 @@ if multi_platform_available:
         """RSS 크롤링"""
         try:
             from api.crawling.rss_crawler import ArxivRSSCrawler
-            from core.database import DatabaseManager
+            from core.paper_database import PaperDatabase
             
             rss_crawler = ArxivRSSCrawler()
-            db = DatabaseManager()
+            db = PaperDatabase()
             
             count = 0
             for paper in rss_crawler.crawl_papers([request.category] if request.category else [], None, None, request.limit):
-                paper_data = {
-                    'paper_id': paper.paper_id,
-                    'platform': paper.platform,
-                    'title': paper.title,
-                    'abstract': paper.abstract,
-                    'authors': paper.authors,
-                    'categories': paper.categories,
-                    'pdf_url': paper.pdf_url,
-                    'published_date': paper.published_date,
-                    'created_at': datetime.now()
-                }
-                db.save_paper(paper_data)
+                db.save_paper(paper)
                 count += 1
             
             return {"status": "success", "saved_count": count}
@@ -196,6 +182,114 @@ if multi_platform_available:
             import traceback
             traceback.print_exc()
             return {"status": "error", "error": str(e)}
+
+    # FAISS 기반 논문 검색 API
+    @app.get("/api/v1/search_papers_faiss")
+    async def search_papers_faiss(query: str = Query(..., min_length=3), k: int = Query(10, ge=1, le=100)):
+        """FAISS를 사용하여 논문 검색"""
+        global faiss_manager
+        if faiss_manager is None:
+            raise HTTPException(status_code=503, detail="FAISS manager not initialized.")
+
+        try:
+            search_results = faiss_manager.search_papers(query, k)
+            paper_db = PaperDatabase()
+            results = []
+            for paper_id, distance in search_results:
+                paper = paper_db.get_paper_by_id(paper_id)
+                if paper:
+                    results.append({
+                        "title": paper.title,
+                        "paper_id": paper.paper_id,
+                        "platform": paper.platform,
+                        "authors": paper.authors,
+                        "categories": paper.categories,
+                        "pdf_url": paper.pdf_url,
+                        "abstract": paper.abstract,
+                        "published_date": paper.published_date.strftime('%Y-%m-%d'),
+                        "updated_date": paper.updated_date.strftime('%Y-%m-%d'),
+                        "distance": float(distance) # FAISS distance
+                    })
+            return {"status": "success", "results": results}
+        except Exception as e:
+            print(f"FAISS search error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"FAISS search failed: {e}")
+
+    # 논문 추천 API (FAISS + LLM 재랭크)
+    @app.get("/api/v1/recommend_papers")
+    async def recommend_papers(
+        user_interests: List[str] = Query(..., description="사용자 관심사 (키워드 목록)"),
+        num_candidates: int = Query(500, ge=50, le=1000, description="FAISS에서 가져올 논문 후보 수"),
+        top_k_rerank: int = Query(50, ge=5, le=500, description="LLM 재랭크 후 반환할 최종 논문 수")
+    ):
+        """FAISS와 LLM을 사용하여 논문 추천 및 설명 생성"""
+        global faiss_manager, llm_reranker
+        if faiss_manager is None:
+            raise HTTPException(status_code=503, detail="FAISS manager not initialized.")
+        if llm_reranker is None:
+            raise HTTPException(status_code=503, detail="LLM reranker not initialized. Check LM_STUDIO_BASE_URL environment variable.")
+
+        try:
+            # 1. FAISS를 이용한 후보 생성 (사용자 관심사 텍스트로 검색)
+            # FAISS는 텍스트 쿼리를 임베딩하여 유사한 논문을 찾음
+            query_text = " ".join(user_interests) # 사용자 관심사 키워드를 하나의 쿼리 문자열로 결합
+            faiss_results = faiss_manager.search_papers(query_text, k=num_candidates)
+
+            if not faiss_results:
+                return {"status": "success", "message": "No paper candidates found with FAISS.", "results": []}
+            
+            # 2. 후보 논문 데이터베이스에서 세부 정보 가져오기
+            paper_db = PaperDatabase()
+            candidate_papers_full_data = []
+            for paper_id, _ in faiss_results:
+                paper = paper_db.get_paper_by_id(paper_id)
+                if paper:
+                    candidate_papers_full_data.append({
+                        "paper_id": paper.paper_id,
+                        "title": paper.title,
+                        "abstract": paper.abstract,
+                        "authors": paper.authors,
+                        "categories": paper.categories,
+                        "pdf_url": paper.pdf_url,
+                        "published_date": paper.published_date.isoformat(),
+                        "updated_date": paper.updated_date.isoformat(),
+                    })
+            
+            if not candidate_papers_full_data:
+                return {"status": "success", "message": "No full paper data found for candidates.", "results": []}
+
+            # 3. LLM을 이용한 재랭크 및 설명 생성
+            reranked_papers = llm_reranker.rerank_and_explain(
+                user_interests=user_interests,
+                papers=candidate_papers_full_data,
+                top_k=top_k_rerank
+            )
+
+            # 4. 최종 결과 반환
+            final_recommendations = []
+            for paper in reranked_papers:
+                final_recommendations.append({
+                    "title": paper.get("title"),
+                    "paper_id": paper.get("paper_id"),
+                    "platform": paper.get("platform"),
+                    "authors": paper.get("authors"),
+                    "categories": paper.get("categories"),
+                    "pdf_url": paper.get("pdf_url"),
+                    "published_date": paper.get("published_date"),
+                    "abstract": paper.get("abstract"),
+                    "llm_score": paper.get("llm_score"),
+                    "llm_explanation": paper.get("llm_explanation")
+                })
+
+            return {"status": "success", "results": final_recommendations}
+        except Exception as e:
+            print(f"Recommend papers API error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"Paper recommendation failed: {e}")
+
 else:
     print("DEBUG: Multi-platform crawling not available")
 
@@ -211,7 +305,28 @@ if category_routes_available:
 
 @app.on_event("startup")
 async def startup_event():
+    global faiss_manager, llm_reranker
     print("DEBUG: Enhanced FastAPI server starting up...")
+    try:
+        faiss_manager = FAISSManager()
+        print("DEBUG: FAISS Manager initialized.")
+    except Exception as e:
+        print(f"ERROR: Failed to initialize FAISS Manager: {e}")
+        import traceback
+        traceback.print_exc()
+
+    try:
+        lm_studio_base_url = os.getenv("LM_STUDIO_BASE_URL")
+        if not lm_studio_base_url:
+            print("WARNING: LM_STUDIO_BASE_URL environment variable not set. LLM Reranker will not be initialized.")
+        else:
+            llm_reranker = LLMReranker(lm_studio_base_url=lm_studio_base_url)
+            print("DEBUG: LLM Reranker initialized for LM Studio.")
+    except Exception as e:
+        print(f"ERROR: Failed to initialize LLM Reranker: {e}")
+        import traceback
+        traceback.print_exc()
+    
     if enhanced_routes_available:
         print("DEBUG: LM Studio integration enabled")
         print("DEBUG: AI agents initialized")

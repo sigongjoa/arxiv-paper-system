@@ -1,13 +1,13 @@
 import requests
 import logging
 import json
-from .config import LLM_API_URL
+from .config import Config
 
 logger = logging.getLogger(__name__)
 
 class LLMSummarizer:
     def __init__(self):
-        self.base_url = LLM_API_URL
+        self.base_url = Config.LM_STUDIO_BASE_URL
     
     def summarize_paper(self, paper):
         prompt = f"""다음 논문을 분석하여 정확한 JSON 형식으로 구조화된 요약을 작성하세요. 반드시 유효한 JSON만 출력하고 다른 텍스트는 포함하지 마세요.
@@ -59,6 +59,7 @@ class LLMSummarizer:
         summary_text = response_data['choices'][0]['message']['content'].strip()
         print(f"DEBUG: Raw LLM response length: {len(summary_text)}")
         print(f"DEBUG: Raw LLM response preview: {summary_text[:200]}...")
+        logger.debug(f"Raw LLM summary_text before JSON processing: '{summary_text}'")
         
         # Remove markdown code blocks if present
         if summary_text.startswith('```'):
@@ -69,7 +70,17 @@ class LLMSummarizer:
         summary_text = summary_text.strip()
         
         # Validate JSON
-        parsed = json.loads(summary_text)
-        print(f"DEBUG: Successfully parsed JSON for {paper.get('arxiv_id', 'unknown')}")
-        return summary_text
+        try:
+            parsed = json.loads(summary_text)
+            print(f"DEBUG: Successfully parsed JSON for {paper.get('arxiv_id', 'unknown')}")
+            return summary_text
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON 파싱 실패 for {paper.get('arxiv_id', 'unknown')}: {e}. 원본 텍스트: '{summary_text[:500]}'")
+            # 유효한 빈 JSON 객체 반환
+            return json.dumps({
+                "background": {"problem_definition": ""},
+                "contributions": [],
+                "methodology": {"approach": "", "datasets": ""},
+                "results": {"key_findings": "", "performance": ""}
+            })
 

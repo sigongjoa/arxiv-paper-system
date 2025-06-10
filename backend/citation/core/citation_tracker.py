@@ -11,7 +11,7 @@ class CitationTracker:
         self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
         self.s2_api_key = None
         
-        logging.error(f"CitationTracker initialized with Neo4j: {neo4j_uri}")
+        logging.info(f"CitationTracker initialized with Neo4j: {neo4j_uri}")
         
     def create_schema(self):
         with self.driver.session() as session:
@@ -19,7 +19,7 @@ class CitationTracker:
             session.run("CREATE INDEX paper_year IF NOT EXISTS FOR (p:Paper) ON (p.year)")
             session.run("CREATE INDEX paper_domain IF NOT EXISTS FOR (p:Paper) ON (p.problem_domain)")
             
-        logging.error("Neo4j schema created")
+        logging.info("Neo4j schema created")
     
     def get_paper_data_from_s2(self, arxiv_id: str) -> Optional[Dict]:
         """Semantic Scholar API에서 논문 데이터 조회"""
@@ -37,7 +37,7 @@ class CitationTracker:
             
             if response.status_code == 200:
                 data = response.json()
-                logging.error(f"Retrieved paper data for {arxiv_id}: {data.get('title', 'No title')}")
+                logging.info(f"Retrieved paper data for {arxiv_id}: {data.get('title', 'No title')}")
                 return data
             else:
                 logging.error(f"S2 API error for {arxiv_id}: {response.status_code}")

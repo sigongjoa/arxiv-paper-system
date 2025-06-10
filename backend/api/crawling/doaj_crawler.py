@@ -15,12 +15,12 @@ class DOAJCrawler:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-        logging.error("DOAJ crawler initialized")
+        logging.info("DOAJ crawler initialized")
 
     def crawl_papers(self, categories=None, start_date=None, end_date=None, limit=20):
         """DOAJ 논문 크롤링"""
         try:
-            logging.error(f"DOAJ: Starting crawl - categories={categories}, limit={limit}")
+            logging.info(f"DOAJ: Starting crawl - categories={categories}, limit={limit}")
             papers = []
             
             # 검색 쿼리 구성
@@ -58,7 +58,7 @@ class DOAJCrawler:
                 # * 대신 일반적인 검색어 사용 (와일드카드 금지)
                 query = 'science OR research OR article'
             
-            logging.error(f"DOAJ: Search query: {query}")
+            logging.info(f"DOAJ: Search query: {query}")
             
             # API 요청 (v1 사용, 쿼리를 URL 경로에 포함)
             from urllib.parse import quote
@@ -69,27 +69,27 @@ class DOAJCrawler:
                 'sort': 'created_date:desc'
             }
             
-            logging.error(f"DOAJ: API URL: {url}")
+            logging.info(f"DOAJ: API URL: {url}")
             response = self.session.get(url, params=params, timeout=60)  # 60초로 증가
             response.raise_for_status()
             
             data = response.json()
-            logging.error(f"DOAJ: API response - status={response.status_code}, keys={list(data.keys())}")
+            logging.debug(f"DOAJ: API response - status={response.status_code}, keys={list(data.keys())}")
             
             if 'results' in data:
                 results = data['results']
-                logging.error(f"DOAJ: Found {len(results)} papers")
+                logging.info(f"DOAJ: Found {len(results)} papers")
                 for item in results:
                     paper = self._parse_paper(item)
                     if paper:
                         papers.append(paper)
-                        logging.error(f"DOAJ: Yielding paper: {paper.title[:50]}...")
+                        logging.debug(f"DOAJ: Yielding paper: {paper.title[:50]}...")
                         yield paper
                         
                     if len(papers) >= limit:
                         break
             else:
-                logging.error(f"DOAJ: No 'results' in API response")
+                logging.warning(f"DOAJ: No 'results' in API response")
                         
         except Exception as e:
             logging.error(f"DOAJ crawl error: {e}")

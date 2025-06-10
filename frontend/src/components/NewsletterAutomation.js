@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { newsletterAPI } from '../utils/api';
 import './NewsletterAutomation.css';
 
 const NewsletterAutomation = () => {
@@ -41,21 +42,17 @@ const NewsletterAutomation = () => {
     try {
       const recipients = formData.recipients.split(',').map(email => email.trim()).filter(email => email);
       
-      // API 호출 (백엔드 엔드포인트 필요)
-      const response = await fetch('/api/v1/newsletter/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipients,
-          domain: formData.domain,
-          days_back: parseInt(formData.daysBack),
-          max_papers: parseInt(formData.maxPapers),
-          sender_email: formData.senderEmail,
-          title: formData.title
-        })
+      // API 호출
+      const response = await newsletterAPI.create({
+        recipients,
+        domain: formData.domain,
+        days_back: parseInt(formData.daysBack),
+        max_papers: parseInt(formData.maxPapers),
+        sender_email: formData.senderEmail,
+        title: formData.title
       });
       
-      const data = await response.json();
+      const data = response.data;
       setResult(data);
       setStatus(data.success ? 'success' : 'error');
       
@@ -73,16 +70,12 @@ const NewsletterAutomation = () => {
     setStatus('testing');
     
     try {
-      const response = await fetch('/api/v1/newsletter/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domain: formData.domain,
-          max_papers: Math.min(parseInt(formData.maxPapers), 5)
-        })
+      const response = await newsletterAPI.test({
+        domain: formData.domain,
+        max_papers: Math.min(parseInt(formData.maxPapers), 5)
       });
       
-      const data = await response.json();
+      const data = response.data;
       setResult(data);
       setStatus(data.success ? 'success' : 'error');
       
@@ -99,18 +92,14 @@ const NewsletterAutomation = () => {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/v1/newsletter/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipients: formData.recipients.split(',').map(email => email.trim()),
-          domain: formData.domain,
-          hour: 9,
-          minute: 0
-        })
+      const response = await newsletterAPI.schedule({
+        recipients: formData.recipients.split(',').map(email => email.trim()),
+        domain: formData.domain,
+        hour: 9,
+        minute: 0
       });
       
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         loadScheduledTasks();
       }
@@ -125,8 +114,8 @@ const NewsletterAutomation = () => {
 
   const loadScheduledTasks = async () => {
     try {
-      const response = await fetch('/api/v1/newsletter/scheduled');
-      const data = await response.json();
+      const response = await newsletterAPI.getScheduled();
+      const data = response.data;
       setScheduledTasks(data.tasks || []);
     } catch (error) {
       console.error('Failed to load scheduled tasks:', error);
@@ -135,8 +124,8 @@ const NewsletterAutomation = () => {
 
   const loadSystemStatus = async () => {
     try {
-      const response = await fetch('/api/v1/newsletter/status');
-      const data = await response.json();
+      const response = await newsletterAPI.getStatus();
+      const data = response.data;
       setSystemStatus(data);
     } catch (error) {
       console.error('Failed to load system status:', error);

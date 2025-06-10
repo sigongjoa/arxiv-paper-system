@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { systemAPI, aiAPI, paperAPI } from '../utils/api';
 import './SystemDashboard.css';
 
 const SystemDashboard = () => {
@@ -19,18 +20,18 @@ const SystemDashboard = () => {
       setIsRefreshing(true);
       
       // Load system health
-      const healthResponse = await fetch('/api/health');
-      const healthData = await healthResponse.json();
+      const healthResponse = await systemAPI.getHealth();
+      const healthData = healthResponse.data;
       setSystemHealth(healthData);
 
       // Load AI system status
-      const aiResponse = await fetch('/api/enhanced/ai/enhanced/models/status');
-      const aiData = await aiResponse.json();
+      const aiResponse = await aiAPI.getModelsStatus();
+      const aiData = aiResponse.data;
       setPerformance(aiData);
 
       // Load general stats
-      const statsResponse = await fetch('/api/stats');
-      const statsData = await statsResponse.json();
+      const statsResponse = await paperAPI.getStats();
+      const statsData = statsResponse.data;
       setSystemStats(statsData);
 
       // Simulate recent activity
@@ -50,10 +51,8 @@ const SystemDashboard = () => {
 
   const runSystemOptimization = async () => {
     try {
-      const response = await fetch('/api/enhanced/system/enhanced/optimize', {
-        method: 'POST'
-      });
-      const result = await response.json();
+      const response = await aiAPI.optimizeSystem();
+      const result = response.data;
       
       if (result.optimization_recommendations) {
         alert('System optimization completed! Check console for details.');
@@ -67,8 +66,8 @@ const SystemDashboard = () => {
 
   const runDiagnostics = async () => {
     try {
-      const response = await fetch('/api/health');
-      const diagnostics = await response.json();
+      const response = await systemAPI.getHealth();
+      const diagnostics = response.data;
       
       // Show diagnostics in a modal or new tab
       const diagnosticsWindow = window.open('', '_blank');

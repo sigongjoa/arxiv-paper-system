@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { aiAPI } from '../../utils/api';
 
 const ResearchDiscoveryPanel = () => {
   const [queryText, setQueryText] = useState('');
@@ -26,15 +27,9 @@ const ResearchDiscoveryPanel = () => {
         exclude_papers: []
       };
 
-      const response = await fetch('/api/agents/discover/research', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
+      const response = await aiAPI.discoverResearch(requestData);
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setRecommendations(data.data.recommendations || []);

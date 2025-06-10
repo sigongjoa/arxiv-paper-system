@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CategoryDropdownSelector from './CategoryDropdownSelector';
+import { systemAPI } from '../utils/api';
 import './MultiPlatformSelector.css';
 
 const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefreshStatus }) => {
@@ -41,19 +42,16 @@ const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefr
     const checkPlatformStatus = async () => {
         // 백그라운드에서 플랫폼 상태 확인 (선택적)
         try {
-            const response = await fetch('/api/v1/multi/platforms');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    // API 응답이 있으면 상태 업데이트
-                    const updatedPlatforms = { ...defaultPlatforms };
-                    Object.keys(data.platforms).forEach(platform => {
-                        if (updatedPlatforms[platform]) {
-                            updatedPlatforms[platform].available = data.platforms[platform];
-                        }
-                    });
-                    setPlatforms(updatedPlatforms);
-                }
+            const response = await systemAPI.getMultiPlatforms();
+            if (response.data.success) {
+                // API 응답이 있으면 상태 업데이트
+                const updatedPlatforms = { ...defaultPlatforms };
+                Object.keys(response.data.platforms).forEach(platform => {
+                    if (updatedPlatforms[platform]) {
+                        updatedPlatforms[platform].available = response.data.platforms[platform];
+                    }
+                });
+                setPlatforms(updatedPlatforms);
             }
         } catch (error) {
             console.log('플랫폼 상태 확인 실패 (기본값 사용):', error);

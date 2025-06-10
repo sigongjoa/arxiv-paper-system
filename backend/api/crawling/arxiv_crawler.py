@@ -9,12 +9,14 @@ import os
 # Add path for models
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from core.models import Paper
+from core.embedding_manager import EmbeddingManager
 
 class ArxivCrawler:
     def __init__(self, delay=3.0):
         self.base_url = "http://export.arxiv.org/api/query"
         self.delay = delay
         self.last_request_time = 0
+        self.embedding_manager = EmbeddingManager()
         print(f"DEBUG: ArxivCrawler initialized with {delay}s delay")
     
     def _wait_for_rate_limit(self):
@@ -77,6 +79,10 @@ class ArxivCrawler:
         raw_updated = entry.find('atom:updated', ns).text
         print(f"DEBUG_XML: {arxiv_id} - 원본 published='{raw_published}', updated='{raw_updated}'")
         
+        # Generate embedding
+        text_to_embed = f"{title}. {abstract}"
+        embedding = self.embedding_manager.get_embedding(text_to_embed)
+
         return Paper(
             paper_id=arxiv_id,
             platform='arxiv',
@@ -86,7 +92,8 @@ class ArxivCrawler:
             categories=categories,
             pdf_url=pdf_link,
             published_date=published,
-            updated_date=updated
+            updated_date=updated,
+            embedding=embedding.tolist() if embedding is not None else None
         )
     
     def crawl_papers(self, categories: List[str], start_date: datetime, end_date: datetime, batch_size: int = None, limit: int = 50) -> Generator[Paper, None, None]:

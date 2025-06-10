@@ -14,11 +14,11 @@ class WorkingMultiPlatformCrawlerAPI:
     def __init__(self):
         # DB 매니저 우선 초기화
         try:
-            from core.database import DatabaseManager
-            self.db = DatabaseManager()
-            logger.info("DatabaseManager initialized successfully")
+            from core.paper_database import PaperDatabase
+            self.db = PaperDatabase()
+            logger.info("PaperDatabase initialized successfully")
         except Exception as e:
-            logger.error(f"DatabaseManager init failed: {e}")
+            logger.error(f"PaperDatabase init failed: {e}")
             import traceback
             traceback.print_exc()
             self.db = None

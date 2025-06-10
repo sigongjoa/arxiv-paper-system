@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { paperAPI, citationAPI } from '../utils/api';
 import './CitationGraph.css';
 
 const CitationGraph = () => {
@@ -34,8 +35,8 @@ const CitationGraph = () => {
 
   const loadPapers = async () => {
     try {
-      const response = await fetch('/api/v1/papers?domain=all&days_back=30&limit=100');
-      const data = await response.json();
+      const response = await paperAPI.getPapers('all', 30, 100);
+      const data = response.data;
       setPapers(data);
     } catch (error) {
       console.error('논문 로드 실패:', error);
@@ -73,10 +74,8 @@ const CitationGraph = () => {
 
     try {
       // 1. Citation 데이터 추출
-      const extractResponse = await fetch(`/api/v1/citation/extract/${selectedPaper.id}`, {
-        method: 'POST'
-      });
-      const extractResult = await extractResponse.json();
+      const extractResponse = await citationAPI.extractCitationData(selectedPaper.id);
+      const extractResult = extractResponse.data;
       
       if (!extractResult.success) {
         setStatus(`❌ Citation 추출 실패: ${extractResult.error}`);
@@ -87,8 +86,8 @@ const CitationGraph = () => {
       setStatus('🔍 Citation 네트워크 생성 중...');
       
       // 2. 네트워크 데이터 조회
-      const networkResponse = await fetch(`/api/v1/citation/network/${selectedPaper.id}?depth=${graphDepth}`);
-      const networkData = await networkResponse.json();
+      const networkResponse = await citationAPI.getCitationNetwork(selectedPaper.id, graphDepth);
+      const networkData = networkResponse.data;
       
       if (!networkData.nodes || networkData.nodes.length === 0) {
         setStatus('⚠️ Citation 데이터가 없습니다');
@@ -202,8 +201,8 @@ const CitationGraph = () => {
     setStatus('📈 인용 패턴 분석 중...');
     
     try {
-      const response = await fetch(`/api/v1/citation/analysis/${selectedPaper.id}`);
-      const result = await response.json();
+      const response = await citationAPI.analyzeCitationPatterns(selectedPaper.id);
+      const result = response.data;
       
       if (result.error) {
         setStatus(`❌ 분석 실패: ${result.error}`);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { recommendationAPI, paperAPI } from '../utils/api';
 import '../styles/common.css';
-
-const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const RecommendationSystem = () => {
   const [papers, setPapers] = useState([]);
@@ -21,8 +20,8 @@ const RecommendationSystem = () => {
   const loadPapers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/papers?limit=100`);
-      const data = await response.json();
+      const response = await paperAPI.getPapers('all', 30, 100); // Adjust domain, daysBack, limit as needed
+      const data = response.data;
       setPapers(data);
     } catch (error) {
       console.error('논문 로드 실패:', error);
@@ -33,8 +32,8 @@ const RecommendationSystem = () => {
 
   const checkSystemStatus = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/recommendations/status`);
-      const status = await response.json();
+      const response = await recommendationAPI.getStatus();
+      const status = response.data;
       setSystemStatus(status);
     } catch (error) {
       console.error('시스템 상태 확인 실패:', error);
@@ -44,12 +43,8 @@ const RecommendationSystem = () => {
   const initializeSystem = async () => {
     try {
       setInitializationStatus('초기화 중...');
-      const response = await fetch(`${API_BASE_URL}/recommendations/initialize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ force_rebuild: false })
-      });
-      const result = await response.json();
+      const response = await recommendationAPI.initializeSystem();
+      const result = response.data;
       
       if (result.success) {
         setInitializationStatus('초기화 완료');
@@ -66,16 +61,12 @@ const RecommendationSystem = () => {
   const getRecommendations = async (paperId) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/recommendations/get`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paper_id: paperId,
-          type: recommendationType,
-          n_recommendations: 10
-        })
+      const response = await recommendationAPI.getRecommendations({
+        paper_id: paperId,
+        type: recommendationType,
+        n_recommendations: 10
       });
-      const result = await response.json();
+      const result = response.data;
       
       if (result.error) {
         if (result.initialization_required) {

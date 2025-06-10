@@ -57,7 +57,7 @@ class ModernRecommendationEngine:
             conn = sqlite3.connect(self.db_path)
             
             query = """
-            SELECT arxiv_id, title, abstract, authors, categories, 
+            SELECT paper_id, title, abstract, authors, categories, 
                    published_date, updated_date
             FROM papers 
             WHERE abstract IS NOT NULL AND title IS NOT NULL
@@ -98,7 +98,7 @@ class ModernRecommendationEngine:
         )
         
         self.paper_embeddings = embeddings
-        self.paper_ids = papers_df['arxiv_id'].tolist()
+        self.paper_ids = papers_df['paper_id'].tolist()
         
         logger.info(f"✅ 임베딩 생성 완료: {embeddings.shape}")
         return embeddings
@@ -125,10 +125,11 @@ class ModernRecommendationEngine:
 
     def create_paper_clusters(self, embeddings: np.ndarray, n_clusters: int = 50):
         """논문을 주제별로 클러스터링"""
-        logger.info(f"🎯 논문 클러스터링 시작 (k={n_clusters})...")
+        effective_n_clusters = max(1, min(n_clusters, len(embeddings) // 2))
+        logger.info(f"🎯 논문 클러스터링 시작 (k={effective_n_clusters})...")
         
         # K-means 클러스터링
-        self.cluster_model = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+        self.cluster_model = KMeans(n_clusters=effective_n_clusters, random_state=42, n_init=10)
         cluster_labels = self.cluster_model.fit_predict(embeddings)
         
         self.paper_clusters = cluster_labels
@@ -136,7 +137,7 @@ class ModernRecommendationEngine:
         # 클러스터별 인기도 계산
         self._calculate_cluster_popularity()
         
-        logger.info(f"✅ 클러스터링 완료: {n_clusters}개 주제 클러스터")
+        logger.info(f"✅ 클러스터링 완료: {effective_n_clusters}개 주제 클러스터")
 
     def _calculate_cluster_popularity(self):
         """클러스터별 인기도 계산 (최신성 + 다양성 기반)"""
@@ -321,10 +322,10 @@ class ModernRecommendationEngine:
             
             placeholders = ','.join(['?' for _ in paper_ids])
             query = f"""
-            SELECT arxiv_id, title, abstract, authors, categories, 
+            SELECT paper_id, title, abstract, authors, categories, 
                    published_date, updated_date
             FROM papers 
-            WHERE arxiv_id IN ({placeholders})
+            WHERE paper_id IN ({placeholders})
             """
             
             df = pd.read_sql_query(query, conn, params=paper_ids)
@@ -341,13 +342,13 @@ class ModernRecommendationEngine:
                     categories = row['categories'].split(', ') if row['categories'] else []
                 
                 papers.append({
-                    'arxiv_id': row['arxiv_id'],
+                    'paper_id': row['paper_id'],
                     'title': row['title'],
                     'abstract': row['abstract'][:300] + '...' if len(row['abstract']) > 300 else row['abstract'],
                     'authors': authors,
                     'categories': categories,
                     'published_date': row['published_date'],
-                    'pdf_url': f"https://arxiv.org/pdf/{row['arxiv_id']}.pdf"
+                    'pdf_url': f"https://arxiv.org/pdf/{row['paper_id']}.pdf"
                 })
             
             return papers
@@ -461,7 +462,7 @@ class ModernRecommendationEngine:
         # 추천 점수와 논문 정보 결합
         result = []
         for rec in recommendations:
-            paper_detail = next((p for p in paper_details if p['arxiv_id'] == rec['paper_id']), None)
+            paper_detail = next((p for p in paper_details if p['paper_id'] == rec['paper_id']), None)
             if paper_detail:
                 paper_detail.update(rec)
                 result.append(paper_detail)

@@ -18,7 +18,7 @@ class ArxivRSSCrawler:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-        logging.error("ArxivRSSCrawler initialized")
+        logging.info("ArxivRSSCrawler initialized")
     
     def _parse_rss_entry(self, entry) -> Paper:
         try:
@@ -56,7 +56,7 @@ class ArxivRSSCrawler:
             
             pdf_url = f"https://arxiv.org/pdf/{arxiv_id}.pdf"
             
-            logging.error(f"RSS parsed: {arxiv_id} - {title[:50]}...")
+            logging.debug(f"RSS parsed: {arxiv_id} - {title[:50]}...")
             
             return Paper(
                 paper_id=arxiv_id,
@@ -84,23 +84,23 @@ class ArxivRSSCrawler:
             if papers_count >= limit:
                 break
             rss_url = f"{self.base_rss_url}/{category}"
-            logging.error(f"Fetching RSS: {rss_url}")
+            logging.info(f"Fetching RSS: {rss_url}")
             
             try:
                 # requests로 직접 가져오기 (working_rss_test.py 방식)
                 response = self.session.get(rss_url, timeout=15)
                 response.raise_for_status()
                 
-                logging.error(f"HTTP 상태: {response.status_code}, 응답 길이: {len(response.text)}")
+                logging.debug(f"HTTP 상태: {response.status_code}, 응답 길이: {len(response.text)}")
                 
                 # feedparser로 파싱
                 feed = feedparser.parse(response.text)
                 
-                logging.error(f"Feed title: {feed.feed.get('title', 'No title')}")
-                logging.error(f"Entries found: {len(feed.entries)}")
+                logging.debug(f"Feed title: {feed.feed.get('title', 'No title')}")
+                logging.debug(f"Entries found: {len(feed.entries)}")
                 
                 if not feed.entries:
-                    logging.error(f"No entries for {category}")
+                    logging.warning(f"No entries for {category}")
                     continue
                 
                 for i, entry in enumerate(feed.entries):
@@ -110,7 +110,7 @@ class ArxivRSSCrawler:
                     try:
                         paper = self._parse_rss_entry(entry)
                         papers_count += 1
-                        logging.error(f"RSS paper {papers_count}/{limit}: {paper.paper_id}")
+                        logging.debug(f"RSS paper {papers_count}/{limit}: {paper.paper_id}")
                         yield paper
                         
                     except Exception as e:
@@ -121,4 +121,4 @@ class ArxivRSSCrawler:
                 logging.error(f"RSS fetch error for {category}: {str(e)}")
                 continue
         
-        logging.error(f"RSS crawling completed: {papers_count} papers total")
+        logging.info(f"RSS crawling completed: {papers_count} papers total")

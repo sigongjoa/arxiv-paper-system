@@ -96,24 +96,15 @@ class SimpleCrawlerTest:
         except Exception as e:
             print(f"❌ {platform_name} 크롤링 실패: {e}")
             
-    def run(self):
-        while True:
-            self.show_menu()
-            
-            try:
-                choice = input("\n선택 (0-6): ").strip()
-                
-                if choice == '0':
-                    print("종료")
-                    break
-                elif choice in self.platforms:
-                    self.test_platform(choice)
+    def run_single_test(self, platform_key='1'): # 기본값으로 ArXiv 테스트
+        if platform_key in self.platforms:
+            self.test_platform(platform_key)
                 else:
-                    print("❌ 잘못된 선택")
-                    
-            except KeyboardInterrupt:
-                print("\n\n중단됨")
-                break
+            print(f"❌ 잘못된 플랫폼 키: {platform_key}")
+
+def main():
+    test_runner = SimpleCrawlerTest()
+    test_runner.run_single_test()
 
 if __name__ == "__main__":
-    SimpleCrawlerTest().run()
+    main()

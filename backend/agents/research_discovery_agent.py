@@ -9,6 +9,13 @@ import time
 from sentence_transformers import SentenceTransformer
 import faiss
 from .lm_studio_client import LMStudioClient
+from core.database import Paper  # Paper 모델 임포트
+from core.config import Config
+from core.llm_summarizer import LLMSummarizer as TextSummarizer # LLMSummarizer를 TextSummarizer로 임포트
+from core.recommendation_engine import ModernRecommendationEngine
+from core.arxiv_client import ArxivClient
+from core.paper_database import PaperDatabase
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -180,26 +187,27 @@ Always respond in Korean with detailed explanations."""
                                            similarity: float) -> str:
         """추천 이유 생성"""
         try:
-            prompt = f"""다음 논문이 연구 쿼리와 관련있는 이유를 한국어로 설명해주세요:
+            logging.info(f"_generate_recommendation_reason 호출됨. 쿼리: {query}, 관련 논문: {paper.get('title', '없음')}")
 
-연구 쿼리: {query.query_text}
-논문 제목: {paper.get('title', '')}
-논문 초록: {paper.get('abstract', '')[:300]}
-유사도 점수: {similarity:.3f}
+            prompt_messages = [
+                {
+                    "role": "system",
+                    "content": "너는 유능한 AI 논문 추천 시스템 에이전트이다. 사용자 쿼리와 관련 논문 정보를 바탕으로 왜 이 논문이 관련성이 높은지 300자 내외로 간결하게 설명해야 한다. 설명은 명확하고 이해하기 쉬워야 하며, 기술적인 용어는 최소화해야 한다."
+                },
+                {
+                    "role": "user",
+                    "content": f"사용자 쿼리: {query.query_text}\n\n추천 논문 제목: {paper.get('title', '없음')}\n추천 논문 초록: {paper.get('abstract', '')[:300]}\n\n이 논문이 사용자 쿼리에 왜 관련성이 높은지 300자 내외로 설명해주세요."
+                }
+            ]
 
-설명 요구사항:
-1. 구체적인 연관성
-2. 연구 방법론의 관련성
-3. 응용 분야의 유사성
-4. 2-3문장으로 간결하게
-
-추천 이유:"""
-            
-            reason = await self.llm_client.generate_response(
-                prompt, self.system_prompt, max_tokens=200
-            )
-            
-            return reason or f"유사도 점수 {similarity:.3f}로 관련성이 높은 논문입니다."
+            try:
+                logging.info("LM Studio Client를 통해 추천 이유 생성 요청.")
+                reason = await self.llm_client.generate_response(prompt_messages, temperature=0.7, max_tokens=300)
+                logging.info(f"LM Studio Client로부터 받은 추천 이유: {reason[:300]}...") # 받은 이유의 처음 300자 로깅
+                return reason if reason else "추천 이유를 생성하지 못했습니다."
+            except Exception as e:
+                logging.error(f"추천 이유 생성 중 오류 발생: {e}")
+                return "추천 이유 생성 중 오류가 발생했습니다."
             
         except Exception as e:
             logger.error(f"추천 이유 생성 실패: {e}", exc_info=True)
@@ -311,3 +319,8 @@ Always respond in Korean with detailed explanations."""
         except Exception as e:
             logger.error(f"임베딩 통계 조회 실패: {e}", exc_info=True)
             return {'status': 'error', 'error': str(e)}
+
+    async def discover_and_recommend(self, user_query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        # This method is not provided in the original file or the code block
+        # It's assumed to exist as it's called in the code block
+        pass

@@ -6,6 +6,7 @@ import time
 import requests
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,8 @@ class LMStudioClient:
         })
         logger.info(f"LM Studio client initialized: {self.config.base_url}")
 
-    async def generate_response(self, 
-                              prompt: str, 
+    async def generate_response(self,
+                              prompt: str | List[Dict[str, str]],
                               system_message: str = None,
                               **kwargs) -> str:
         """텍스트 생성"""
@@ -40,7 +41,11 @@ class LMStudioClient:
             messages = []
             if system_message:
                 messages.append({"role": "system", "content": system_message})
-            messages.append({"role": "user", "content": prompt})
+            
+            if isinstance(prompt, list):
+                messages.extend(prompt)
+            else:
+                messages.append({"role": "user", "content": prompt})
             
             payload = {
                 "model": self.config.model_name,
@@ -52,12 +57,16 @@ class LMStudioClient:
             
             start_time = time.time()
             
+            logging.info(f"LM Studio 요청: {messages}")
             response = self.session.post(
                 f"{self.config.base_url}/chat/completions",
                 json=payload,
                 timeout=self.config.timeout
             )
             
+            logger.debug(f"Raw LM Studio API response status: {response.status_code}")
+            logger.debug(f"Raw LM Studio API response text: '{response.text[:500]}'")
+
             if response.status_code != 200:
                 logger.error(f"LM Studio API 에러: {response.status_code} - {response.text}")
                 raise Exception(f"LM Studio API failed: {response.status_code}")
@@ -68,9 +77,13 @@ class LMStudioClient:
             content = result['choices'][0]['message']['content']
             usage = result.get('usage', {})
             
-            logger.info(f"LLM 응답 생성 완료 - 시간: {execution_time:.2f}s, 토큰: {usage.get('total_tokens', 'unknown')}")
+            logging.info(f"LLM 응답 생성 완료 - 시간: {execution_time:.2f}s, 토큰: {usage.get('total_tokens', 'unknown')}")
             
-            return content
+            logging.info(f"LM Studio 원본 응답: {content[:500]}...")
+            cleaned_content = self._clean_llm_response(content)
+            logging.info(f"클리닝된 LM Studio 응답: {cleaned_content[:500]}...")
+            
+            return cleaned_content
             
         except requests.exceptions.RequestException as e:
             logger.error(f"HTTP 요청 실패: {e}")
@@ -78,6 +91,28 @@ class LMStudioClient:
         except Exception as e:
             logger.error(f"LLM 응답 생성 실패: {e}")
             raise
+
+    def _clean_llm_response(self, text: str) -> str:
+        """LLM 응답에서 마크다운 코드 블록 등을 정리하고, JSON 형식이라면 파싱합니다."""
+        logging.info(f"클리닝 전 텍스트: {text[:500]}...")
+        
+        # 마크다운 코드 블록 제거
+        # 'json' 또는 'text'와 같은 언어 지정자가 있을 수 있으므로 정규식 업데이트
+        cleaned_text = re.sub(r"```(?:json|text|python|\w+)?\n(.*?)\n```", r"\1", text, flags=re.DOTALL)
+        
+        # 불필요한 공백 및 줄바꿈 제거
+        cleaned_text = cleaned_text.strip()
+        
+        # JSON 형식으로 시도
+        try:
+            json_data = json.loads(cleaned_text)
+            # 유효한 JSON이면 JSON 문자열로 반환 (예쁜 출력)
+            logging.info("클리닝 후 텍스트: JSON 형식으로 감지 및 파싱")
+            return json.dumps(json_data, ensure_ascii=False, indent=2)
+        except json.JSONDecodeError:
+            # JSON이 아니면 일반 텍스트 반환
+            logging.info(f"클리닝 후 텍스트: {cleaned_text[:500]}...")
+            return cleaned_text
 
     def check_connection(self) -> bool:
         """연결 상태 확인"""

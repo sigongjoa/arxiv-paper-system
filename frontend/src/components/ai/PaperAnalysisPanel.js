@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { aiAPI } from '../../utils/api';
 
 const PaperAnalysisPanel = () => {
   const [paperContent, setPaperContent] = useState('');
@@ -40,15 +41,9 @@ const PaperAnalysisPanel = () => {
         }
       };
 
-      const response = await fetch('/api/agents/analyze/paper', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
+      const response = await aiAPI.analyzePaperAgents(requestData);
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setAnalysisResult(data.data);

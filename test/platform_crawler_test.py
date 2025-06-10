@@ -112,7 +112,13 @@ class PlatformCrawlerTest:
             import traceback
             traceback.print_exc()
             
-    def test_all_platforms(self):
+    def run_single_platform_test(self, platform_key='1'): # 기본값으로 ArXiv 테스트
+        if platform_key in self.platforms:
+            self.test_platform(platform_key)
+        else:
+            print(f"❌ 잘못된 플랫폼 키: {platform_key}")
+
+    def run_all_platform_tests(self):
         print(f"\n{'='*60}")
         print("모든 플랫폼 순차 테스트")
         print(f"{'='*60}")
@@ -142,35 +148,14 @@ class PlatformCrawlerTest:
             status = "✅" if result == 'SUCCESS' else "❌"
             print(f"{status} {platform}: {result}")
             
-    def run(self):
-        while True:
-            self.show_menu()
-            
-            try:
-                choice = input("\n선택하세요 (0-7): ").strip()
-                
-                if choice == '0':
-                    print("테스트 도구를 종료합니다.")
-                    break
-                elif choice == '7':
-                    self.test_all_platforms()
-                elif choice in self.platforms:
-                    self.test_platform(choice)
-                else:
-                    print("❌ 잘못된 선택입니다. 다시 입력해주세요.")
-                    
-            except KeyboardInterrupt:
-                print("\n\n테스트가 중단되었습니다.")
-                break
-            except Exception as e:
-                print(f"❌ 예상치 못한 오류: {e}")
-                logging.error(f"메인 루프 에러: {e}")
-
-def main():
+def main(test_type='single', platform_key='1'):
     """메인 실행 함수"""
     try:
         tester = PlatformCrawlerTest()
-        tester.run()
+        if test_type == 'all':
+            tester.run_all_platform_tests()
+        else:
+            tester.run_single_platform_test(platform_key)
     except Exception as e:
         print(f"❌ 치명적 오류: {e}")
         logging.error(f"메인 함수 에러: {e}")
@@ -178,4 +163,16 @@ def main():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    main()
+    # 이 스크립트를 직접 실행할 때 기본 동작 (ArXiv 단일 테스트)
+    # 또는 명령줄 인수를 통해 다른 테스트 실행 가능
+    # 예: python platform_crawler_test.py --type all
+    # 예: python platform_crawler_test.py --type single --platform 2
+    import argparse
+    parser = argparse.ArgumentParser(description='Platform Crawler Test Runner')
+    parser.add_argument('--type', type=str, default='single', choices=['single', 'all'],
+                        help='Type of test to run (single or all)')
+    parser.add_argument('--platform', type=str, default='1',
+                        help='Platform key for single test (e.g., 1 for ArXiv)')
+    args = parser.parse_args()
+    
+    main(args.type, args.platform)

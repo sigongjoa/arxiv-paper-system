@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { mailingAPI, newsletterAPI } from '../utils/api';
 
 const MailingSendPanel = () => {
   const [config, setConfig] = useState({
@@ -40,13 +41,9 @@ const MailingSendPanel = () => {
     console.log('[DEBUG] Saving config:', config);
     
     try {
-      const response = await fetch('/api/v1/mailing/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-      });
+      const response = await mailingAPI.saveConfig(config);
       
-      const data = await response.json();
+      const data = response.data;
       setStatus(data.success ? 'config_saved' : 'config_error');
       console.log('[DEBUG] Config save result:', data);
     } catch (error) {
@@ -63,16 +60,12 @@ const MailingSendPanel = () => {
     console.log('[DEBUG] Testing newsletter generation');
     
     try {
-      const response = await fetch('/api/v1/newsletter/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domain: sendData.domain,
-          max_papers: Math.min(sendData.maxPapers, 5)
-        })
+      const response = await newsletterAPI.test({
+        domain: sendData.domain,
+        max_papers: Math.min(sendData.maxPapers, 5)
       });
       
-      const data = await response.json();
+      const data = response.data;
       setResult(data);
       setStatus(data.success ? 'test_success' : 'test_failed');
       console.log('[DEBUG] Newsletter test result:', data);
@@ -92,20 +85,16 @@ const MailingSendPanel = () => {
     const recipients = sendData.recipients.split(',').map(email => email.trim()).filter(email => email);
     
     try {
-      const response = await fetch('/api/v1/newsletter/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipients: recipients,
-          domain: sendData.domain,
-          days_back: sendData.daysBack,
-          max_papers: sendData.maxPapers,
-          sender_email: config.fromEmail,
-          title: sendData.title
-        })
+      const response = await newsletterAPI.create({
+        recipients: recipients,
+        domain: sendData.domain,
+        days_back: sendData.daysBack,
+        max_papers: sendData.maxPapers,
+        sender_email: config.fromEmail,
+        title: sendData.title
       });
       
-      const data = await response.json();
+      const data = response.data;
       setResult(data);
       setStatus(data.success ? 'send_success' : 'send_failed');
       console.log('[DEBUG] Newsletter send result:', data);
@@ -120,8 +109,8 @@ const MailingSendPanel = () => {
   const loadConfig = async () => {
     console.log('[DEBUG] Loading config');
     try {
-      const response = await fetch('/api/v1/mailing/config');
-      const data = await response.json();
+      const response = await mailingAPI.getConfig();
+      const data = response.data;
       if (data.success) {
         setConfig(data.config);
         console.log('[DEBUG] Config loaded');

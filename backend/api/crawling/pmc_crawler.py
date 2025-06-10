@@ -15,12 +15,12 @@ class PMCCrawler:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-        logging.error("PMC crawler initialized")
+        logging.info("PMC crawler initialized")
 
     def crawl_papers(self, categories=None, start_date=None, end_date=None, limit=20):
         """PMC 논문 크롤링"""
         try:
-            logging.error(f"PMC: Starting crawl - categories={categories}, limit={limit}")
+            logging.info(f"PMC: Starting crawl - categories={categories}, limit={limit}")
             papers = []
             
             # 검색 쿼리 구성
@@ -53,7 +53,7 @@ class PMCCrawler:
             
             query = ' AND '.join(query_terms)
             
-            logging.error(f"PMC: Search query: {query}")
+            logging.info(f"PMC: Search query: {query}")
             
             # 검색 실행
             search_url = f"{self.base_url}/esearch.fcgi"
@@ -67,7 +67,7 @@ class PMCCrawler:
                 'email': 'research@example.com'
             }
             
-            logging.error(f"PMC: API URL: {search_url}")
+            logging.info(f"PMC: API URL: {search_url}")
             response = self.session.get(search_url, params=search_params, timeout=60)
             response.raise_for_status()
             
@@ -76,7 +76,7 @@ class PMCCrawler:
                 root = ET.fromstring(response.content)
                 id_list = root.findall('.//Id')
                 ids = [id_elem.text for id_elem in id_list]
-                logging.error(f"PMC: Found {len(ids)} paper IDs")
+                logging.info(f"PMC: Found {len(ids)} paper IDs")
                 
                 # 논문 상세 정보 가져오기
                 if ids:
@@ -85,7 +85,7 @@ class PMCCrawler:
                             paper = self._fetch_paper_details(paper_id)
                             if paper:
                                 papers.append(paper)
-                                logging.error(f"PMC: Yielding paper: {paper.title[:50]}...")
+                                logging.debug(f"PMC: Yielding paper: {paper.title[:50]}...")
                                 yield paper
                         except Exception as e:
                             logging.error(f"PMC: Error processing paper {paper_id}: {e}")
@@ -93,7 +93,7 @@ class PMCCrawler:
                             
                         time.sleep(0.5)  # Rate limiting
                 else:
-                    logging.error("PMC: No paper IDs found")
+                    logging.warning("PMC: No paper IDs found")
                         
             except ET.ParseError as e:
                 logging.error(f"PMC: XML parse error: {e}")

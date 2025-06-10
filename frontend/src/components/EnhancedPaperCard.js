@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ChatBot from './ai/ChatBot';
+import { aiAPI } from '../utils/api';
 import './EnhancedPaperCard.css';
 
 const EnhancedPaperCard = ({ paper, onAnalyze, onCitationAnalysis, showDetails = false }) => {
@@ -17,28 +18,22 @@ const EnhancedPaperCard = ({ paper, onAnalyze, onCitationAnalysis, showDetails =
   const handleQuickAnalysis = async (analysisType) => {
     setIsAnalyzing(true);
     try {
-      let endpoint = '';
+      let response;
       switch (analysisType) {
         case 'comprehensive':
-          endpoint = '/api/ai/analyze/comprehensive';
+          response = await aiAPI.analyzeComprehensive(paper.arxiv_id);
           break;
         case 'findings':
-          endpoint = '/api/ai/extract/findings';
+          response = await aiAPI.extractKeyFindings(paper.arxiv_id);
           break;
         case 'quality':
-          endpoint = '/api/ai/assess/quality';
+          response = await aiAPI.assessPaperQuality(paper.arxiv_id);
           break;
         default:
           return;
       }
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ arxiv_id: paper.arxiv_id })
-      });
-
-      const result = await response.json();
+      const result = response.data;
       setAnalysisResult({ type: analysisType, data: result });
       
       if (onAnalyze) {

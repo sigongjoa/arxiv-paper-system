@@ -144,3 +144,6 @@ async def test_multi_platform_crawling():
 
 if __name__ == "__main__":
     asyncio.run(test_multi_platform_crawling())
+
+def main():
+    asyncio.run(test_multi_platform_crawling())

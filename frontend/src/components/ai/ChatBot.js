@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { aiAPI } from '../../utils/api';
 import './ChatBot.css';
 
 const ChatBot = ({ paperData, isOpen, onClose, sessionId = 'default' }) => {
@@ -42,17 +43,13 @@ const ChatBot = ({ paperData, isOpen, onClose, sessionId = 'default' }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paper_id: paperData.arxiv_id,
-          message: inputValue,
-          session_id: sessionId
-        })
-      });
+      const response = await aiAPI.chatWithPaper(
+        sessionId,
+        inputValue,
+        paperData.arxiv_id
+      );
 
-      const data = await response.json();
+      const data = response.data;
       
       const assistantMessage = {
         type: 'assistant',
@@ -86,7 +83,7 @@ const ChatBot = ({ paperData, isOpen, onClose, sessionId = 'default' }) => {
 
   const clearChat = async () => {
     try {
-      await fetch(`/api/ai/chat/clear/${sessionId}`, { method: 'DELETE' });
+      await aiAPI.clearChatHistory(sessionId);
       setMessages([{
         type: 'assistant',
         content: `대화가 초기화되었습니다. "${paperData.title}"에 대해 다시 질문해보세요.`,
@@ -102,31 +99,25 @@ const ChatBot = ({ paperData, isOpen, onClose, sessionId = 'default' }) => {
     setChatMode('analysis');
     
     try {
-      let endpoint = '';
+      let response;
       switch (analysisType) {
         case 'comprehensive':
-          endpoint = '/api/ai/analyze/comprehensive';
+          response = await aiAPI.analyzeComprehensive(paperData.arxiv_id);
           break;
         case 'findings':
-          endpoint = '/api/ai/extract/findings';
+          response = await aiAPI.extractKeyFindings(paperData.arxiv_id);
           break;
         case 'quality':
-          endpoint = '/api/ai/assess/quality';
+          response = await aiAPI.assessPaperQuality(paperData.arxiv_id);
           break;
         case 'questions':
-          endpoint = '/api/ai/generate/questions';
+          response = await aiAPI.generateResearchQuestions(paperData.arxiv_id);
           break;
         default:
           return;
       }
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ arxiv_id: paperData.arxiv_id })
-      });
-
-      const data = await response.json();
+      const data = response.data;
       
       const analysisMessage = {
         type: 'analysis',
