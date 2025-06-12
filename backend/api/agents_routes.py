@@ -12,7 +12,8 @@ import os
 from backend.agents import LMStudioConfig, ResearchQuery, WorkflowStatus
 from backend.agents.agent_orchestrator import AgentOrchestrator
 from backend.core.config import Config
-from backend.core.database import get_db, Paper
+from backend.db.connection import get_db_session
+from backend.core.database import Paper
 
 logger = logging.getLogger(__name__)
 

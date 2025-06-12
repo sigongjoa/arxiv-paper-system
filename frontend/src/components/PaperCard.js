@@ -34,7 +34,7 @@ const PaperCard = ({ paper }) => {
   }, [analyzing]);
   
   const handleAnalyze = async () => {
-    console.log('DEBUG: Starting analysis for paper:', paper.arxiv_id);
+    console.log('DEBUG: Starting analysis for paper:', paper.paper_id);
     setAnalyzing(true);
     setProgressStep(0);
     
@@ -43,13 +43,13 @@ const PaperCard = ({ paper }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setProgressStep(1);
       
-      const response = await paperAPI.analyzePaper(paper.arxiv_id);
+      const response = await paperAPI.analyzePaper(paper.paper_id);
       console.log('DEBUG: Analysis response:', response.data);
       
       setProgressStep(2);
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const analysisText = response.data.analysis;
+      const analysisText = response.data.analysis_result;
       setAnalysis(analysisText);
       
       setProgressStep(3);
@@ -68,7 +68,7 @@ const PaperCard = ({ paper }) => {
   };
   
   const generatePdfFromAnalysis = async (analysisData) => {
-    console.log('DEBUG: Auto-generating PDF for analysis:', paper.arxiv_id);
+    console.log('DEBUG: Auto-generating PDF for analysis:', paper.paper_id);
     
     // PDF 생성 단계로 업데이트
     setProgressStep(4);
@@ -80,7 +80,7 @@ const PaperCard = ({ paper }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          arxiv_id: paper.arxiv_id,
+          external_id: paper.paper_id,
           title: paper.title,
           analysis: analysisData
         })
@@ -94,7 +94,7 @@ const PaperCard = ({ paper }) => {
         const event = new CustomEvent('loadPdf', { 
           detail: { 
             url: url, 
-            name: `analysis_${paper.arxiv_id.replace('/', '_')}.pdf`,
+            name: `analysis_${paper.platform}_${paper.paper_id.replace('/', '_').replace('.', '_')}.pdf`,
             title: paper.title
           } 
         });
@@ -123,7 +123,7 @@ const PaperCard = ({ paper }) => {
       <div className="PaperMeta">
         <p><strong>저자:</strong> {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
         <p><strong>카테고리:</strong> {Array.isArray(paper.categories) ? paper.categories.join(', ') : paper.categories}</p>
-        <p><strong>arXiv ID:</strong> {paper.arxiv_id}</p>
+        <p><strong>ID:</strong> {paper.paper_id} | <strong>Platform:</strong> {paper.platform}</p>
         <p><strong>발행일:</strong> {new Date(paper.published_date).toLocaleDateString()}</p>
       </div>
       <div className="PaperAbstract">

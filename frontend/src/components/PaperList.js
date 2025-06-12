@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { paperAPI, citationAPI, systemAPI } from '../utils/api';
-import { ARXIV_CATEGORIES } from '../utils/categories';
+import { paperAPI, citationAPI, systemAPI, recommendationAPI } from '../utils/api';
 import EnhancedPaperCard from './EnhancedPaperCard';
 import MultiPlatformSelector from './MultiPlatformSelector';
 import './PaperList.css';
@@ -10,15 +9,24 @@ const PaperList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
-    domain: 'cs',
+    domain: 'all',
     category: 'all',
     maxResults: 30,
-    query: ''
+    query: '',
+    daysBack: 7
   });
+  const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [viewMode, setViewMode] = useState('enhanced');
   const [analysisMode, setAnalysisMode] = useState(false);
   const [showMultiPlatform, setShowMultiPlatform] = useState(false);
   const mountedRef = useRef(true);
+
+  useEffect(() => {
+    if (mountedRef.current) {
+      loadInitialPapers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatforms]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -30,7 +38,8 @@ const PaperList = () => {
 
   useEffect(() => {
     if (mountedRef.current) {
-      setFilters(prev => ({ ...prev, category: 'all' }));
+      // This effect can be simplified or removed if category dropdown is generalized
+      // setFilters(prev => ({ ...prev, category: 'all' }));
     }
   }, [filters.domain]);
 
@@ -64,10 +73,18 @@ const PaperList = () => {
     }
   };
 
+  const computeDomainParam = () => {
+    // 플랫폼을 1개만 골랐을 때만 단일 검색, 그 외엔 'all' 또는 backend가
+    // platforms 배열을 받을 수 있다면 빈 문자열 반환하고 querystring에 배열 추가
+    if (selectedPlatforms.length === 1) return selectedPlatforms[0];
+    return 'all';
+  };
+
   const loadInitialPapers = async () => {
     safeSetState(setLoading, true);
     try {
-      const response = await paperAPI.getPapers('cs', 7, 30, null);
+      // Initial load uses default filters or general parameters
+      const response = await paperAPI.getPapers(computeDomainParam(), filters.daysBack, filters.maxResults, filters.category === 'all' ? null : filters.category);
       const papersData = Array.isArray(response?.data) ? response.data : [];
       safeSetState(setPapers, papersData);
       safeSetState(setError, '');
@@ -90,12 +107,11 @@ const PaperList = () => {
   const handleTextSearch = async () => {
     safeSetState(setLoading, true);
     try {
-      const response = await paperAPI.searchPapers(
+      const response = await recommendationAPI.searchPapersFaiss( // Changed to recommendationAPI.searchPapersFaiss
         filters.query, 
-        filters.category === 'all' ? null : filters.category,
         filters.maxResults
-      );
-      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+      ); 
+      const items = Array.isArray(response?.data?.results) ? response.data.results : []; // Changed to .results
       safeSetState(setPapers, items);
       safeSetState(setError, '');
     } catch (err) {
@@ -110,8 +126,8 @@ const PaperList = () => {
     safeSetState(setLoading, true);
     try {
       const response = await paperAPI.getPapers(
-        filters.domain,
-        0,
+        computeDomainParam(), // Use computeDomainParam() here
+        filters.daysBack,
         filters.maxResults,
         filters.category === 'all' ? null : filters.category
       );
@@ -127,90 +143,22 @@ const PaperList = () => {
     }
   };
 
-  const handleCrawl = async () => {
-    safeSetState(setLoading, true);
+  const handlePaperAnalysis = async (paperId, analysisResult) => { // Changed arxivId to paperId
     try {
-      const response = await paperAPI.crawlPapers(
-        filters.domain,
-        0,
-        filters.maxResults,
-        filters.category === 'all' ? null : filters.category
-      );
-      
-      console.log('API 크롤링 결과:', response);
-      
-      if (Array.isArray(response?.data) && response.data.length > 0) {
-        safeSetState(setPapers, prev => {
-          const existingIds = new Set((prev || []).map(p => p?.arxiv_id || p?.id).filter(Boolean));
-          const newPapers = response.data.filter(p => p && !existingIds.has(p.arxiv_id || p.id));
-          return [...newPapers, ...prev];
-        });
-      }
-      
-      showNotification('✅ API 크롤링 완료!');
-      
-    } catch (err) {
-      console.error('API 크롤링 에러:', err);
-      const errorMsg = err?.response?.data?.detail || err?.message || '크롤링 실패';
-      safeSetState(setError, '크롤링 실패: ' + errorMsg);
-    } finally {
-      safeSetState(setLoading, false);
-    }
-  };
-
-  const handleRSSCrawl = async () => {
-    safeSetState(setLoading, true);
-    try {
-      const response = await paperAPI.crawlPapersRSS(
-        filters.domain,
-        filters.maxResults,
-        filters.category === 'all' ? null : filters.category
-      );
-      
-      if (response?.data?.status === 'success') {
-        console.log('RSS 크롤링 결과:', response.data);
-        safeSetState(setError, '');
-        
-        if (Array.isArray(response.data.papers) && response.data.papers.length > 0) {
-          safeSetState(setPapers, prev => {
-            const existingIds = new Set((prev || []).map(p => p?.arxiv_id || p?.id).filter(Boolean));
-            const newPapers = response.data.papers.filter(p => p && !existingIds.has(p.arxiv_id || p.id));
-            return [...newPapers, ...prev];
-          });
-        }
-        
-        const count = response.data.saved_count || response.data.papers?.length || 0;
-        showNotification(`✅ RSS 크롤링 완료! ${count}개 새 논문 저장됨`);
-        
-      } else {
-        const errorMsg = response?.data?.error || 'RSS 크롤링 실패';
-        safeSetState(setError, 'RSS 크롤링 실패: ' + errorMsg);
-      }
-    } catch (err) {
-      console.error('RSS 크롤링 에러:', err);
-      const errorMsg = err?.response?.data?.detail || err?.message || 'RSS 크롤링 실패';
-      safeSetState(setError, 'RSS 크롤링 실패: ' + errorMsg);
-    } finally {
-      safeSetState(setLoading, false);
-    }
-  };
-
-  const handlePaperAnalysis = async (arxivId, analysisResult) => {
-    try {
-      const paper = papers.find(p => p?.arxiv_id === arxivId);
+      const paper = papers.find(p => p?.paper_id === paperId); // Changed arxivId to paper_id
       
       const pdfResponse = await paperAPI.generateAnalysisPdf({
-        arxiv_id: arxivId,
+        external_id: paperId, // Changed arxiv_id to external_id, using paperId
         title: paper?.title || 'Unknown Title',
-        analysis: JSON.stringify(analysisResult)
+        analysis: analysisResult // analysisResult is already stringified if it came from backend
       });
       
       if (window && typeof window.dispatchEvent === 'function') {
         window.dispatchEvent(new CustomEvent('loadPdf', {
           detail: {
             url: URL.createObjectURL(pdfResponse.data),
-            name: `analysis_${arxivId}.pdf`,
-            title: `AI Analysis: ${paper?.title || arxivId}`
+            name: `analysis_${paper?.platform || 'unknown'}_${paperId.replace('/', '_').replace('.', '_')}.pdf`, // Updated filename
+            title: `AI Analysis: ${paper?.title || paperId}`
           }
         }));
       }
@@ -223,22 +171,22 @@ const PaperList = () => {
     }
   };
 
-  const handleCitationAnalysis = async (arxivId) => {
+  const handleCitationAnalysis = async (paperId) => { // Changed arxivId to paperId
     try {
-      const extractResponse = await citationAPI.extractCitationData(arxivId);
+      const extractResponse = await citationAPI.extractCitationData(paperId); // Changed arxivId to paperId
       
       if (!extractResponse.data?.success) {
         throw new Error('Citation extraction failed');
       }
       
-      const analysisResponse = await citationAPI.analyzeCitationPatterns(arxivId);
+      const analysisResponse = await citationAPI.analyzeCitationPatterns(paperId); // Changed arxivId to paperId
       const analysisData = analysisResponse.data;
       
       if (analysisData?.error) {
         throw new Error(analysisData.error);
       }
       
-      const saveResponse = await citationAPI.saveCitationAnalysis(arxivId, analysisData);
+      const saveResponse = await citationAPI.saveCitationAnalysis(paperId, analysisData); // Changed arxivId to paperId
       const saveResult = saveResponse.data;
       
       if (saveResult?.success) {
@@ -248,8 +196,8 @@ const PaperList = () => {
       }
       
     } catch (err) {
-      console.error('Citation analysis failed:', err);
-      alert('❌ 인용 분석 실패: ' + (err?.message || '알 수 없는 오류'));
+      console.error('인용 분석 처리 실패:', err);
+      showNotification('❌ 인용 분석 처리 실패: ' + (err?.message || '알 수 없는 오류'), 'error');
     }
   };
 
@@ -271,36 +219,25 @@ const PaperList = () => {
   };
 
   const handleSmartCrawl = async () => {
-    if (!window.confirm('AI 기반 스마트 크롤링을 시작하시겠습니까? 시간이 더 오래 걸릴 수 있습니다.')) {
-      return;
-    }
-    
     safeSetState(setLoading, true);
     try {
-      const response = await systemAPI.smartCrawl({
-        domain: filters.domain,
-        category: filters.category === 'all' ? null : filters.category,
-        days_back: 0,
-        limit: filters.maxResults
-      });
-      
-      if (response?.data?.status === 'success') {
-        const newPapers = Array.isArray(response.data.papers) ? response.data.papers : [];
-        if (newPapers.length > 0) {
-          safeSetState(setPapers, prev => {
-            const existingIds = new Set((prev || []).map(p => p?.arxiv_id || p?.id).filter(Boolean));
-            return [...newPapers.filter(p => p && !existingIds.has(p.arxiv_id || p.id)), ...prev];
-          });
-        }
-        showNotification('✅ Smart Crawl 완료!');
+      const requestBody = {
+        query: filters.query || 'LLM', // 기본 쿼리 제공
+        max_results: filters.maxResults,
+        platforms: filters.domain === 'all' ? null : [filters.domain] // 'all'이면 모든 플랫폼, 아니면 선택된 플랫폼
+      };
+      showNotification('🚀 스마트 크롤링 시작...');
+      const response = await systemAPI.smartCrawl(requestBody);
+      if (response.data.status === 'success') {
+        showNotification(`✅ 스마트 크롤링 완료: ${response.data.count}개의 새 논문 처리됨`);
+        // 스마트 크롤링 후 최신 논문 다시 로드
+        loadInitialPapers(); 
       } else {
-        const errorMsg = response?.data?.error || 'Smart Crawl 실패';
-        safeSetState(setError, 'Smart Crawl 실패: ' + errorMsg);
+        showNotification(`❌ 스마트 크롤링 실패: ${response.data.error}`, 'error');
       }
     } catch (err) {
-      console.error('Smart Crawl 에러:', err);
-      const errorMsg = err?.response?.data?.detail || err?.message || 'Smart Crawl 실패';
-      safeSetState(setError, 'Smart Crawl 실패: ' + errorMsg);
+      console.error('스마트 크롤링 에러:', err);
+      showNotification('❌ 스마트 크롤링 실패: ' + (err?.message || '알 수 없는 오류'), 'error');
     } finally {
       safeSetState(setLoading, false);
     }
@@ -309,24 +246,29 @@ const PaperList = () => {
   const handleMultiPlatformCrawl = async (crawlRequest) => {
     safeSetState(setLoading, true);
     try {
-      const response = await paperAPI.multiCrawl(crawlRequest.domain, crawlRequest.days_back, crawlRequest.category, crawlRequest.limit);
-      if (response?.data?.status === 'success') {
-        const newPapers = Array.isArray(response.data.papers) ? response.data.papers : [];
-        if (newPapers.length > 0) {
-          safeSetState(setPapers, prev => {
-            const existingIds = new Set((prev || []).map(p => p?.arxiv_id || p?.id).filter(Boolean));
-            return [...newPapers.filter(p => p && !existingIds.has(p.arxiv_id || p.id)), ...prev];
-          });
-        }
-        showNotification(`✅ 멀티플랫폼 크롤링 완료! ${response.data.saved_count || 0}개 논문 저장됨`);
+      showNotification('🚀 다중 플랫폼 크롤링 시작...');
+      const response = await systemAPI.multiCrawl({
+        ...crawlRequest,
+        platforms: crawlRequest.platforms // 필드명 보정
+      });
+      if (response.data.status === 'success') {
+        showNotification(`✅ 다중 플랫폼 크롤링 완료: ${response.data.count}개의 새 논문 처리됨`);
+
+        // Update filters to reflect the just-crawled parameters, then trigger search
+        setFilters(prevFilters => ({
+            ...prevFilters,
+            domain: crawlRequest.platforms && crawlRequest.platforms.length > 0 ? crawlRequest.platforms[0] : 'all', // Assuming one platform for domain filter
+            maxResults: crawlRequest.limit_per_platform || prevFilters.maxResults,
+            daysBack: 0, // This is important to show newly crawled papers
+            category: crawlRequest.categories && crawlRequest.categories.length > 0 ? crawlRequest.categories[0] : prevFilters.category
+        }));
+        handleDomainSearch(); // Reload papers based on updated filters
       } else {
-        const errorMsg = response?.data?.error || '멀티플랫폼 크롤링 실패';
-        safeSetState(setError, '멀티플랫폼 크롤링 실패: ' + errorMsg);
+        showNotification(`❌ 다중 플랫폼 크롤링 실패: ${response.data.error}`, 'error');
       }
     } catch (err) {
-      console.error('Multi-platform crawl error:', err);
-      const errorMsg = err?.response?.data?.detail || err?.message || '멀티플랫폼 크롤링 실패';
-      safeSetState(setError, '멀티플랫폼 크롤링 실패: ' + errorMsg);
+      console.error('다중 플랫폼 크롤링 에러:', err);
+      showNotification('❌ 다중 플랫폼 크롤링 실패: ' + (err?.message || '알 수 없는 오류'), 'error');
     } finally {
       safeSetState(setLoading, false);
     }
@@ -371,10 +313,10 @@ const PaperList = () => {
               value={filters.domain}
               onChange={(e) => setFilters({...filters, domain: e.target.value})}
             >
-              <option value="cs">🖥️ Computer Science</option>
-              <option value="math">📐 Mathematics</option>
-              <option value="physics">⚛️ Physics</option>
-              <option value="all">🌐 All Domains</option>
+              <option value="all">All Platforms</option>
+              <option value="cs">Computer Science</option>
+              <option value="math">Mathematics</option>
+              <option value="physics">Physics</option>
             </select>
           </div>
           
@@ -386,11 +328,6 @@ const PaperList = () => {
               onChange={(e) => setFilters({...filters, category: e.target.value})}
             >
               <option value="all">All Categories</option>
-              {filters.domain !== 'all' && ARXIV_CATEGORIES[filters.domain] && 
-                Object.entries(ARXIV_CATEGORIES[filters.domain].categories).map(([key, value]) => (
-                  <option key={key} value={key}>{key} - {value}</option>
-                ))
-              }
             </select>
           </div>
           
@@ -434,25 +371,6 @@ const PaperList = () => {
             
             <button 
               className="btn-enhanced success" 
-              onClick={handleCrawl} 
-              disabled={loading}
-            >
-              <i className="fas fa-download"></i> 
-              API Crawl
-            </button>
-            
-            <button 
-              className="btn-enhanced" 
-              onClick={handleRSSCrawl} 
-              disabled={loading}
-              style={{background: '#17a2b8', color: 'white'}}
-            >
-              <i className="fas fa-rss"></i> 
-              RSS Crawl
-            </button>
-            
-            <button 
-              className="btn-enhanced warning" 
               onClick={handleSmartCrawl} 
               disabled={loading}
             >
@@ -496,6 +414,9 @@ const PaperList = () => {
         <MultiPlatformSelector
           onCrawl={handleMultiPlatformCrawl}
           isLoading={loading}
+          platformStatus={{}}
+          onRefreshStatus={() => {}}
+          onPlatformChange={setSelectedPlatforms}
         />
       )}
 
@@ -511,8 +432,8 @@ const PaperList = () => {
           <div className="empty-content">
             <h3>📚 No Papers Found</h3>
             <p>Start by crawling papers or try a different search query.</p>
-            <button className="btn-enhanced success" onClick={handleCrawl}>
-              <i className="fas fa-download"></i> Start Crawling
+            <button className="btn-enhanced success" onClick={handleSmartCrawl}>
+              <i className="fas fa-brain"></i> Start Smart Crawl
             </button>
           </div>
         </div>
@@ -564,7 +485,7 @@ const PaperList = () => {
             
             return viewMode === 'enhanced' ? (
               <EnhancedPaperCard
-                key={paper.arxiv_id || index}
+                key={paper.paper_id || index}
                 paper={paper}
                 onAnalyze={handlePaperAnalysis}
                 onCitationAnalysis={handleCitationAnalysis}
@@ -572,7 +493,7 @@ const PaperList = () => {
               />
             ) : (
               <ClassicPaperCard
-                key={paper.arxiv_id || index}
+                key={paper.paper_id || index}
                 paper={paper}
                 onAnalyze={handlePaperAnalysis}
               />
@@ -590,9 +511,9 @@ const ClassicPaperCard = ({ paper, onAnalyze }) => {
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     try {
-      const response = await paperAPI.analyzePaper(paper?.arxiv_id);
-      if (onAnalyze && paper?.arxiv_id) {
-        onAnalyze(paper.arxiv_id, response?.data);
+      const response = await paperAPI.analyzePaper(paper?.paper_id);
+      if (onAnalyze && paper?.paper_id) {
+        onAnalyze(paper.paper_id, response?.data);
       }
     } catch (err) {
       console.error('Analysis failed:', err);
@@ -610,7 +531,7 @@ const ClassicPaperCard = ({ paper, onAnalyze }) => {
         <div className="paper-meta">
           <div><strong>Authors:</strong> {Array.isArray(paper.authors) ? paper.authors.join(', ') : (paper.authors || 'Unknown')}</div>
           <div><strong>Categories:</strong> {Array.isArray(paper.categories) ? paper.categories.join(', ') : (paper.categories || 'Unknown')}</div>
-          <div><strong>arXiv ID:</strong> {paper.arxiv_id || 'Unknown'}</div>
+          <div><strong>ID:</strong> {paper.paper_id} | <strong>Platform:</strong> {paper.platform || 'N/A'}</div>
           <div><strong>Published:</strong> {paper.published_date || 'Unknown'}</div>
         </div>
         <p className="paper-abstract">{paper.abstract || 'No abstract available'}</p>
@@ -624,7 +545,7 @@ const ClassicPaperCard = ({ paper, onAnalyze }) => {
         <button 
           className="btn-enhanced success" 
           onClick={handleAnalyze}
-          disabled={isAnalyzing || !paper.arxiv_id}
+          disabled={isAnalyzing || !paper.paper_id}
         >
           <i className={isAnalyzing ? "fas fa-spinner fa-spin" : "fas fa-robot"}></i> 
           {isAnalyzing ? 'Analyzing...' : 'AI Summary'}

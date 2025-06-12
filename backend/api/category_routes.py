@@ -120,7 +120,7 @@ PLATFORM_DETAILED_CATEGORIES = {
 async def get_platform_categories():
     """모든 플랫폼의 세부 카테고리 반환"""
     try:
-        logger.error("Platform categories requested")
+        logger.info("Platform categories requested")
         return {
             "success": True,
             "categories": PLATFORM_DETAILED_CATEGORIES

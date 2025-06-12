@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import CategoryDropdownSelector from './CategoryDropdownSelector';
 import { systemAPI } from '../utils/api';
 import './MultiPlatformSelector.css';
 
-const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefreshStatus }) => {
+const MultiPlatformSelector = ({
+    onCrawl,
+    isLoading,
+    platformStatus = {},
+    onRefreshStatus,
+    onPlatformChange
+}) => {
     // 플랫폼 기본 정보
     const defaultPlatforms = {
         arxiv: { available: true, status: 'active' },
@@ -18,8 +24,20 @@ const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefr
     const [selectedPlatforms, setSelectedPlatforms] = useState(['arxiv']);
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [crawlLimit, setCrawlLimit] = useState(20);
+    const [selectedPlatform, setSelectedPlatform] = useState(selectedPlatforms.length > 0 ? selectedPlatforms[0] : '');
 
+    useEffect(() => {
+        // 플랫폼 선택(selectedPlatforms)이 바뀌면
+        setSelectedPlatform(prev =>
+            selectedPlatforms.includes(prev) ? prev : selectedPlatforms[0] || ''
+        );
+    }, [selectedPlatforms]);
 
+    useEffect(() => {
+        if (typeof onPlatformChange === 'function') {
+            onPlatformChange(selectedPlatforms);
+        }
+    }, [selectedPlatforms]);
 
     useEffect(() => {
         checkPlatformStatus();
@@ -42,7 +60,7 @@ const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefr
     const checkPlatformStatus = async () => {
         // 백그라운드에서 플랫폼 상태 확인 (선택적)
         try {
-            const response = await systemAPI.getMultiPlatforms();
+            const response = await systemAPI.getPlatforms();
             if (response.data.success) {
                 // API 응답이 있으면 상태 업데이트
                 const updatedPlatforms = { ...defaultPlatforms };
@@ -81,17 +99,18 @@ const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefr
         }
     };
 
-    const handleCategoryChange = (categories) => {
+    const handleCategoryChange = useCallback((categories) => {
         setSelectedCategories(categories);
-    };
+    }, []);
 
     const handleLimitChange = (limit) => {
         setCrawlLimit(limit);
     };
 
     const handleApiCrawl = () => {
+        console.log('handleApiCrawl called. selectedPlatform:', selectedPlatform);
         if (selectedPlatforms.length === 0) {
-            alert('최소 하나의 플랫폼을 선택해주세요.');
+            alert('크롤링할 플랫폼을 선택해주세요.');
             return;
         }
 
@@ -107,8 +126,9 @@ const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefr
     };
 
     const handleRssCrawl = () => {
+        console.log('handleRssCrawl called. selectedPlatform:', selectedPlatform);
         if (selectedPlatforms.length === 0) {
-            alert('최소 하나의 플랫폼을 선택해주세요.');
+            alert('크롤링할 플랫폼을 선택해주세요.');
             return;
         }
 
@@ -133,7 +153,14 @@ const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefr
         
         // 실제 백엔드 상태 확인
         if (platformStatus[platform]) {
-            return platformStatus[platform].status === 'success' ? 'available' : 'error';
+            const backendStatus = platformStatus[platform].status;
+            if (backendStatus === 'active') {
+                return 'available';
+            } else if (backendStatus === 'needs_api_key') {
+                return 'needs-config';
+            } else {
+                return 'error';
+            }
         }
         
         return 'available';
@@ -317,6 +344,8 @@ const MultiPlatformSelector = ({ onCrawl, isLoading, platformStatus = {}, onRefr
                 selectedPlatforms={selectedPlatforms}
                 onCategoryChange={handleCategoryChange}
                 onLimitChange={handleLimitChange}
+                selectedCrawlingPlatform={selectedPlatform}
+                onCrawlingPlatformChange={setSelectedPlatform}
             />
 
             {/* 크롤링 버튼 */}

@@ -1,5 +1,0 @@
-transformers==4.51.3
-sentence-transformers==2.7.0
-faiss-cpu
-requests
-adapters==1.2.0 

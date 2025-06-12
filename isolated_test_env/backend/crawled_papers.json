@@ -1,0 +1,216 @@
+{
+    "paper_id": "arxiv_2506.09050v1",
+    "external_id": "2506.09050v1",
+    "platform": "arxiv",
+    "title": "ALE-Bench: A Benchmark for Long-Horizon Objective-Driven Algorithm\n  Engineering",
+    "abstract": "How well do AI systems perform in algorithm engineering for hard optimization\nproblems in domains such as package-delivery routing, crew scheduling, factory\nproduction planning, and power-grid balancing? We introduce ALE-Bench, a new\nbenchmark for evaluating AI systems on score-based algorithmic programming\ncontests. Drawing on real tasks from the AtCoder Heuristic Contests, ALE-Bench\npresents optimization problems that are computationally hard and admit no known\nexact solution. Unlike short-duration, pass/fail coding benchmarks, ALE-Bench\nencourages iterative solution refinement over long time horizons. Our software\nframework supports interactive agent architectures that leverage test-run\nfeedback and visualizations. Our evaluation of frontier LLMs revealed that\nwhile they demonstrate high performance on specific problems, a notable gap\nremains compared to humans in terms of consistency across problems and\nlong-horizon problem-solving capabilities. This highlights the need for this\nbenchmark to foster future AI advancements.",
+    "authors": [
+        "Yuki Imajuku",
+        "Kohki Horie",
+        "Yoichi Iwata",
+        "Kensho Aoki",
+        "Naohiro Takahashi",
+        "Takuya Akiba"
+    ],
+    "categories": [
+        "cs.AI"
+    ],
+    "pdf_url": "http://arxiv.org/pdf/2506.09050v1",
+    "published_date": "2025-06-10T17:59:56",
+    "updated_date": null,
+    "platform_metadata": {
+        "arxiv_comments": null,
+        "journal_ref": null,
+        "doi": null
+    }
+}
+================================================================================
+{
+    "paper_id": "arxiv_2506.09049v1",
+    "external_id": "2506.09049v1",
+    "platform": "arxiv",
+    "title": "VIKI-R: Coordinating Embodied Multi-Agent Cooperation via Reinforcement\n  Learning",
+    "abstract": "Coordinating multiple embodied agents in dynamic environments remains a core\nchallenge in artificial intelligence, requiring both perception-driven\nreasoning and scalable cooperation strategies. While recent works have\nleveraged large language models (LLMs) for multi-agent planning, a few have\nbegun to explore vision-language models (VLMs) for visual reasoning. However,\nthese VLM-based approaches remain limited in their support for diverse\nembodiment types. In this work, we introduce VIKI-Bench, the first hierarchical\nbenchmark tailored for embodied multi-agent cooperation, featuring three\nstructured levels: agent activation, task planning, and trajectory perception.\nVIKI-Bench includes diverse robot embodiments, multi-view visual observations,\nand structured supervision signals to evaluate reasoning grounded in visual\ninputs. To demonstrate the utility of VIKI-Bench, we propose VIKI-R, a\ntwo-stage framework that fine-tunes a pretrained vision-language model (VLM)\nusing Chain-of-Thought annotated demonstrations, followed by reinforcement\nlearning under multi-level reward signals. Our extensive experiments show that\nVIKI-R significantly outperforms baselines method across all task levels.\nFurthermore, we show that reinforcement learning enables the emergence of\ncompositional cooperation patterns among heterogeneous agents. Together,\nVIKI-Bench and VIKI-R offer a unified testbed and method for advancing\nmulti-agent, visual-driven cooperation in embodied AI systems.",
+    "authors": [
+        "Li Kang",
+        "Xiufeng Song",
+        "Heng Zhou",
+        "Yiran Qin",
+        "Jie Yang",
+        "Xiaohong Liu",
+        "Philip Torr",
+        "Lei Bai",
+        "Zhenfei Yin"
+    ],
+    "categories": [
+        "cs.AI",
+        "cs.CV",
+        "cs.RO"
+    ],
+    "pdf_url": "http://arxiv.org/pdf/2506.09049v1",
+    "published_date": "2025-06-10T17:59:44",
+    "updated_date": null,
+    "platform_metadata": {
+        "arxiv_comments": null,
+        "journal_ref": null,
+        "doi": null
+    }
+}
+================================================================================
+{
+    "paper_id": "arxiv_2506.09048v1",
+    "external_id": "2506.09048v1",
+    "platform": "arxiv",
+    "title": "Understanding Task Vectors in In-Context Learning: Emergence,\n  Functionality, and Limitations",
+    "abstract": "Task vectors offer a compelling mechanism for accelerating inference in\nin-context learning (ICL) by distilling task-specific information into a\nsingle, reusable representation. Despite their empirical success, the\nunderlying principles governing their emergence and functionality remain\nunclear. This work proposes the Linear Combination Conjecture, positing that\ntask vectors act as single in-context demonstrations formed through linear\ncombinations of the original ones. We provide both theoretical and empirical\nsupport for this conjecture. First, we show that task vectors naturally emerge\nin linear transformers trained on triplet-formatted prompts through loss\nlandscape analysis. Next, we predict the failure of task vectors on\nrepresenting high-rank mappings and confirm this on practical LLMs. Our\nfindings are further validated through saliency analyses and parameter\nvisualization, suggesting an enhancement of task vectors by injecting multiple\nones into few-shot prompts. Together, our results advance the understanding of\ntask vectors and shed light on the mechanisms underlying ICL in\ntransformer-based models.",
+    "authors": [
+        "Yuxin Dong",
+        "Jiachen Jiang",
+        "Zhihui Zhu",
+        "Xia Ning"
+    ],
+    "categories": [
+        "cs.LG"
+    ],
+    "pdf_url": "http://arxiv.org/pdf/2506.09048v1",
+    "published_date": "2025-06-10T17:59:31",
+    "updated_date": null,
+    "platform_metadata": {
+        "arxiv_comments": null,
+        "journal_ref": null,
+        "doi": null
+    }
+}
+================================================================================
+{
+    "paper_id": "biorxiv.2023.06.05.543791v1",
+    "external_id": "2023.06.05.543791v1",
+    "platform": "biorxiv",
+    "title": "Engineering cell and nuclear morphology on nano topography by contact-free protein micropatterning",
+    "abstract": "ABSTRACTPlatforms with nanoscale topography have recently become powerful tools in cellular biophysics and bioengineering. Recent studies have shown that nanotopography affects various cellular processes like adhesion and endocytosis, as well as physical properties such as cell shape.To engineer nanopillars more effectively for biomedical applications, it is crucial to gain better control and understanding of how nanopillars affect cell and nuclear physical properties, such as shape and spreading area, and impact cellular processes like endocytosis and adhesion. In this study, we utilized a laser-assisted micropatterning technique to manipulate the 2D architectures of cells on 3D nanopillar platforms. We performed a comprehensive analysis of cellular and nuclear morphology and deformation on both nanopillar and flat substrates. Our findings demonstrate precise engineering of cellular architectures through 2D micropatterning on nanopillar platforms. We show that the coupling between nuclear and cell shape is disrupted on nanopillar surfaces compared to flat surfaces. Furthermore, we discovered that cell elongation on nanopillars enhances nanopillar-induced endocytosis. These results have significant implications for various biomedical applications of nanopillars, including drug delivery, drug screening, intracellular electrophysiology, and biosensing. We believe our platform serves as a versatile tool for further explorations, facilitating investigations into the interplay between cell physical properties and alterations in cellular processes.Download figureOpen in new tab",
+    "authors": [
+        "BioRxiv Author 1",
+        "BioRxiv Author 2"
+    ],
+    "categories": [
+        "Biology",
+        "Bioinformatics"
+    ],
+    "pdf_url": "https://www.biorxiv.org/content/10.1101/2023.06.05.543791v1.full.pdf",
+    "published_date": "2025-06-11T13:57:04.885992",
+    "updated_date": "2025-06-11T13:57:04.885998",
+    "platform_metadata": {
+        "doi": "10.1101/2023.06.05.543791v1"
+    }
+}
+================================================================================
+{
+    "paper_id": "biorxiv.2023.01.05.522896",
+    "external_id": "2023.01.05.522896",
+    "platform": "biorxiv",
+    "title": "Low dimensional criticality embedded in high dimensional awake brain dynamics",
+    "abstract": "AbstractWhether cortical neurons operate in a strongly or weakly correlated dynamical regime determines fundamental information processing capabilities and has fueled decades of debate. Here we offer a resolution of this debate; we show that two important dynamical regimes, typically considered incompatible, can coexist in the same local cortical circuit by separating them into two different subspaces. In awake mouse motor cortex, we find a low-dimensional subspace with large fluctuations consistent with criticality – a dynamical regime with moderate correlations and multi-scale information capacity and transmission. Orthogonal to this critical subspace, we find a high-dimensional subspace containing a desynchronized dynamical regime, which may optimize input discrimination. The critical subspace is apparent only at long timescales, which explains discrepancies among some previous studies. Using a computational model, we show that the emergence of a low-dimensional critical subspace at large timescale agrees with established theory of critical dynamics. Our results suggest that cortex leverages its high dimensionality to multiplex dynamical regimes across different subspaces.Teaser Temporal coarse-graining reveals a low-dimensional critical subspace coexistent with a desynchronized subspace in awake cortex.",
+    "authors": [
+        "BioRxiv Author 1",
+        "BioRxiv Author 2"
+    ],
+    "categories": [
+        "Biology",
+        "Bioinformatics"
+    ],
+    "pdf_url": "https://www.biorxiv.org/content/10.1101/2023.01.05.522896.full.pdf",
+    "published_date": "2025-06-10T13:57:07.008018",
+    "updated_date": "2025-06-11T13:57:07.008027",
+    "platform_metadata": {
+        "doi": "10.1101/2023.01.05.522896"
+    }
+}
+================================================================================
+{
+    "paper_id": "pmc_PMC10394350",
+    "external_id": "PMC10394350",
+    "platform": "pmc",
+    "title": "PMC Paper 1 Title (Crawled)",
+    "abstract": "This is a crawled abstract for PMC paper 1.",
+    "authors": [
+        "PMC Author 1",
+        "PMC Author 2"
+    ],
+    "categories": [
+        "Medicine",
+        "Public Health"
+    ],
+    "pdf_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10394350/pdf/",
+    "published_date": "2025-06-11T13:57:07.973784",
+    "updated_date": "2025-06-11T13:57:07.973793",
+    "platform_metadata": {
+        "pmc_id": "PMC10394350"
+    }
+}
+================================================================================
+{
+    "paper_id": "pmc_PMC9779313",
+    "external_id": "PMC9779313",
+    "platform": "pmc",
+    "title": "PMC Paper 2 Title (Crawled)",
+    "abstract": "This is a crawled abstract for PMC paper 2.",
+    "authors": [
+        "PMC Author 1",
+        "PMC Author 2"
+    ],
+    "categories": [
+        "Medicine",
+        "Public Health"
+    ],
+    "pdf_url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9779313/pdf/",
+    "published_date": "2025-06-10T13:57:09.171023",
+    "updated_date": "2025-06-11T13:57:09.171033",
+    "platform_metadata": {
+        "pmc_id": "PMC9779313"
+    }
+}
+================================================================================
+{
+    "paper_id": "plos_10_1371_journal_pone_0286654",
+    "external_id": "10.1371/journal.pone.0286654",
+    "platform": "plos",
+    "title": "PLOS Paper 1 Title (Crawled)",
+    "abstract": "Background\nStudies have revealed the association of vitamin D with specific types of cancer development, however, its correlation with colorectal polyps (CRPs) remains unverified. Our study aimed to investigate the relationship between vitamin D levels, metabolic factors, and CRPs.\n\n\nMethods\nA cross-sectional study from 2017 to 2019 involving 1306 participants was conducted to investigate the association among vitamin D levels, metabolic factors, uric acid and CRPs in Taiwan. CRPs diagnoses were determined via colonoscopies conducted by experienced gastrointestinal physicians, and biopsied polyps were inspected under a microscope by experienced pathologists. We employed both simple and multiple logistic regression analyses to identify significant factors associated with CRPs and adenomatous polyps, respectively.\n\n\nResults\nOur result showed that the prevalence of 25(OH)-vitamin D deficiency (≦ 20 ng/mL) and CRPs was 21.21% and 40.89%, respectively. Multiple logistic regression revealed that the risk of CRPs increased with old age, male sex, hyperglycemia, high triglyceride levels, and low 25(OH)D levels after adjustment for other factors. Besides, low 25(OH)D levels were significantly associated with CRPs risk in women, whereas elevated blood pressure was associated with CRPs risk in men. 25(OH)D Deficiency was revealed to be significantly associated with risk of CRPs in adults over 50 years old. Compared to nonadenomatous polyps, older age, higher 25(OH) vitamin D and higher uric acid levels were at increased risk for adenomatous polyps.\n\n\nConclusions\nOur study revealed that vitamin D deficiency was significantly associated with the risk of CRPs, especially in adults over 50 years old and women. We should therefore be concerned about the CRP risk of vitamin D deficiency and metabolic syndrome (especially hyperglycemia, elevated blood pressure in men, and high triglyceride levels) in this population.",
+    "authors": [
+        "PLOS Author 1",
+        "PLOS Author 2"
+    ],
+    "categories": [
+        "Biology",
+        "Medicine"
+    ],
+    "pdf_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0286654&type=printable",
+    "published_date": "2025-06-11T13:57:09.552161",
+    "updated_date": "2025-06-11T13:57:09.552179",
+    "platform_metadata": {
+        "doi": "10.1371/journal.pone.0286654"
+    }
+}
+================================================================================
+{
+    "paper_id": "plos_10_1371_journal_pone_0130136",
+    "external_id": "10.1371/journal.pone.0130136",
+    "platform": "plos",
+    "title": "PLOS Paper 2 Title (Crawled)",
+    "abstract": "SerpinB2 (PAI-2), a member of the clade B family of serine protease inhibitors, is one of the most upregulated proteins following cellular stress. Originally described as an inhibitor of urokinase plasminogen activator, its predominant cytoplasmic localisation suggests an intracellular function. SerpinB2 has been reported to display cytoprotective properties in neurons and to interact with intracellular proteins including components of the ubiquitin-proteasome system (UPS). In the current study we explored the potential role of SerpinB2 as a modulator of proteotoxic stress. Initially, we transiently transfected wild-type SerpinB2 and SerpinB2-/- murine embryonic fibroblasts (MEFs) with Huntingtin exon1-polyglutamine (fused C-terminally to mCherry). Inclusion body formation as result of Huntingtin aggregation was evident in the SerpinB2 expressing cells but significantly impaired in the SerpinB2-/- cells, the latter concomitant with loss in cell viability. Importantly, recovery of the wild-type phenotype and cell viability was rescued by retroviral transduction of SerpinB2 expression. SerpinB2 modestly attenuated Huntingtin and amyloid beta fibril formation in vitro and was able to bind preferentially to misfolded proteins. Given the modest chaperone-like activity of SerpinB2 we tested the ability of SerpinB2 to modulate UPS and autophagy activity using a GFP reporter system and autophagy reporter, respectively. Activity of the UPS was reduced and autophagy was dysregulated in SerpinB2-/- compared to wild-type MEFs. Moreover, we observed a non-covalent interaction between ubiquitin and SerpinB2 in cells using GFP-pulldown assays and bimolecular fluorescence complementation. We conclude that SerpinB2 plays an important role in proteostasis as its loss leads to a proteotoxic phenotype associated with an inability to compartmentalize aggregating proteins and a reduced capacity of the UPS.",
+    "authors": [
+        "PLOS Author 1",
+        "PLOS Author 2"
+    ],
+    "categories": [
+        "Biology",
+        "Medicine"
+    ],
+    "pdf_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0130136&type=printable",
+    "published_date": "2025-06-10T13:57:10.040041",
+    "updated_date": "2025-06-11T13:57:10.040049",
+    "platform_metadata": {
+        "doi": "10.1371/journal.pone.0130136"
+    }
+}
+================================================================================

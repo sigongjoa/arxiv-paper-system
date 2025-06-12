@@ -9,12 +9,12 @@ import time
 from sentence_transformers import SentenceTransformer
 import faiss
 from .lm_studio_client import LMStudioClient
-from core.database import Paper  # Paper 모델 임포트
-from core.config import Config
-from core.llm_summarizer import LLMSummarizer as TextSummarizer # LLMSummarizer를 TextSummarizer로 임포트
-from core.recommendation_engine import ModernRecommendationEngine
-from core.arxiv_client import ArxivClient
-from core.paper_database import PaperDatabase
+from backend.core.database import Paper  # Paper 모델 임포트
+from backend.core.config import Config
+from backend.core.llm_summarizer import LLMSummarizer as TextSummarizer # LLMSummarizer를 TextSummarizer로 임포트
+from backend.core.recommendation_engine import ModernRecommendationEngine
+from backend.core.arxiv_client import ArxivClient # Modified import path
+from backend.core.paper_database import PaperDatabase
 import asyncio
 
 logger = logging.getLogger(__name__)

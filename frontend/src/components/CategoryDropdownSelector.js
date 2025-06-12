@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './CategoryDropdownSelector.css';
 
-const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimitChange }) => {
+const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimitChange, selectedCrawlingPlatform, onCrawlingPlatformChange }) => {
     const [platformCategories, setPlatformCategories] = useState({});
     const [loading, setLoading] = useState(false);
-    const [selectedPlatform, setSelectedPlatform] = useState('');
     const [selectedCategoryGroup, setSelectedCategoryGroup] = useState('');
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [limit, setLimit] = useState(20);
@@ -12,16 +11,31 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
 
     useEffect(() => {
         loadDetailedCategories();
-    }, []);
+    }, [selectedCrawlingPlatform]);
 
     const loadDetailedCategories = async () => {
         setLoading(true);
         setError('');
+
+        if (!selectedCrawlingPlatform) {
+            setPlatformCategories({});
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await fetch('/api/v1/platform-categories');
+            const response = await fetch(
+                `/api/v1/platform-categories?platform=${encodeURIComponent(selectedCrawlingPlatform)}`
+            );
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Status ${response.status}: ${errorText}`);
+            }
+            
             const data = await response.json();
             
-            console.error('Category API response:', data);
+            console.log('Category API response:', data);
             
             if (data.success && data.categories) {
                 setPlatformCategories(data.categories);
@@ -31,7 +45,7 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
             }
         } catch (error) {
             console.error('Category load error:', error);
-            setError('API 연결 실패');
+            setError('API 연결 실패: ' + error.message);
             setPlatformCategories(getDefaultCategories());
         }
         setLoading(false);
@@ -40,6 +54,7 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
     const getDefaultCategories = () => {
         return {
             arxiv: {
+                'All Categories': ['all'],
                 'Computer Science': {
                     'cs.AI': 'Artificial Intelligence',
                     'cs.LG': 'Machine Learning',
@@ -76,25 +91,22 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
     };
 
     useEffect(() => {
-        if (selectedPlatforms.length > 0 && !selectedPlatform) {
-            setSelectedPlatform(selectedPlatforms[0]);
-        }
-    }, [selectedPlatforms, selectedPlatform]);
-
-    useEffect(() => {
         setSelectedCategoryGroup('');
         setSelectedCategories([]);
         onCategoryChange([]);
-    }, [selectedPlatform]);
-
-    const handlePlatformChange = (platform) => {
-        setSelectedPlatform(platform);
-    };
+    }, [selectedCrawlingPlatform, onCategoryChange]);
 
     const handleCategoryGroupChange = (group) => {
         setSelectedCategoryGroup(group);
-        setSelectedCategories([]);
-        onCategoryChange([]);
+        
+        if (group === 'All Categories') {
+            setSelectedCategories(['all']);
+            onCategoryChange(['all']);
+        } else {
+            const categoriesInGroup = getCategoriesFromGroup(selectedCrawlingPlatform, group);
+            setSelectedCategories(categoriesInGroup);
+            onCategoryChange(categoriesInGroup);
+        }
     };
 
     const handleCategoryToggle = (category) => {
@@ -107,9 +119,9 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
     };
 
     const handleSelectAllCategories = () => {
-        if (!selectedPlatform || !selectedCategoryGroup) return;
+        if (!selectedCrawlingPlatform || !selectedCategoryGroup) return;
         
-        const allCategories = getCategoriesFromGroup(selectedPlatform, selectedCategoryGroup);
+        const allCategories = getCategoriesFromGroup(selectedCrawlingPlatform, selectedCategoryGroup);
         const newCategories = selectedCategories.length === allCategories.length ? [] : allCategories;
         
         setSelectedCategories(newCategories);
@@ -121,8 +133,8 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
         onLimitChange(newLimit);
     };
 
-    const availableCategoryGroups = selectedPlatform 
-        ? Object.keys(platformCategories[selectedPlatform] || {}) 
+    const availableCategoryGroups = selectedCrawlingPlatform 
+        ? Object.keys(platformCategories[selectedCrawlingPlatform] || {}) 
         : [];
     
     const getCategoriesFromGroup = (platform, group) => {
@@ -137,12 +149,12 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
         return [];
     };
     
-    const availableCategories = getCategoriesFromGroup(selectedPlatform, selectedCategoryGroup);
+    const availableCategories = getCategoriesFromGroup(selectedCrawlingPlatform, selectedCategoryGroup);
 
     const getCategoryDisplayName = (category) => {
-        if (!selectedPlatform || !selectedCategoryGroup) return category;
+        if (!selectedCrawlingPlatform || !selectedCategoryGroup) return category;
         
-        const categoryData = platformCategories[selectedPlatform]?.[selectedCategoryGroup];
+        const categoryData = platformCategories[selectedCrawlingPlatform]?.[selectedCategoryGroup];
         if (typeof categoryData === 'object' && !Array.isArray(categoryData)) {
             return categoryData[category] || category;
         }
@@ -172,8 +184,8 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
                 <div className="selector-group">
                     <label>플랫폼:</label>
                     <select 
-                        value={selectedPlatform} 
-                        onChange={(e) => handlePlatformChange(e.target.value)}
+                        value={selectedCrawlingPlatform}
+                        onChange={(e) => onCrawlingPlatformChange(e.target.value)}
                         className="platform-select"
                     >
                         <option value="">카테고리 선택할 플랫폼</option>
@@ -191,7 +203,7 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
                         value={selectedCategoryGroup} 
                         onChange={(e) => handleCategoryGroupChange(e.target.value)}
                         className="category-group-select"
-                        disabled={!selectedPlatform}
+                        disabled={!selectedCrawlingPlatform}
                     >
                         <option value="">세부 그룹 선택</option>
                         {availableCategoryGroups.map(group => (
@@ -259,9 +271,9 @@ const CategoryDropdownSelector = ({ selectedPlatforms, onCategoryChange, onLimit
                 </div>
             )}
 
-            {selectedPlatform && availableCategories.length === 0 && (
+            {selectedCrawlingPlatform && availableCategories.length === 0 && (
                 <div className="no-categories" style={{padding: '20px', textAlign: 'center', color: '#6c757d'}}>
-                    ℹ️ {selectedPlatform.toUpperCase()} 플랫폼의 세부 카테고리를 로드할 수 없습니다.
+                    ℹ️ {selectedCrawlingPlatform.toUpperCase()} 플랫폼의 세부 카테고리를 로드할 수 없습니다.
                 </div>
             )}
         </div>

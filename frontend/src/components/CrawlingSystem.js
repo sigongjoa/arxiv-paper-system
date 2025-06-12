@@ -46,6 +46,10 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
         // 크롤링 시작 시간 저장
         const crawlStartTime = new Date().toISOString();
         
+        // 선택된 플랫폼 가져오기 (첫 번째 플랫폼 사용 또는 기본값 'all')
+        const selectedPlatformForLoad = crawlRequest.platforms && crawlRequest.platforms.length > 0
+            ? crawlRequest.platforms[0] : 'all';
+        
         try {
             const response = await systemAPI.multiCrawl(crawlRequest);
             
@@ -54,8 +58,8 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
             if (result.status === 'success') {
                 setCrawlResults(result);
                 setStatusMessage(`크롤링 완료! 총 ${result.total_saved}개 논문 저장됨`);
-                // 크롤링 시작 시간 이후 논문만 로드
-                await loadPapersAfterTime(crawlStartTime);
+                // 크롤링 시작 시간 이후 논문만 로드, 선택된 플랫폼 전달
+                await loadPapersAfterTime(crawlStartTime, selectedPlatformForLoad);
                 // 결과 탭으로 자동 전환
                 switchToResultsTab();
             } else {
@@ -68,57 +72,17 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
         setIsLoading(false);
     };
 
-    const handleArxivCrawl = async () => {
-        setIsLoading(true);
-        setStatusMessage('arXiv crawling in progress...');
-        
+    const loadRecentPapers = async (platform = 'all') => {
         try {
-            const response = await paperAPI.crawlPapers({
-                domain: 'cs',
-                category: 'cs.AI',
-                days_back: 0,
-                limit: 20
-            });
-            
-            const result = response.data;
-            setStatusMessage(result.status === 'success' ? 
-                `arXiv crawling completed: ${result.saved_count} papers saved` : 
-                `arXiv crawling failed: ${result.error}`);
-        } catch (error) {
-            setStatusMessage(`arXiv crawling error: ${error.message}`);
-        }
-        
-        setIsLoading(false);
-    };
-
-    const handleRSSCrawl = async () => {
-        setIsLoading(true);
-        setStatusMessage('RSS crawling in progress...');
-        
-        try {
-            const response = await paperAPI.crawlPapersRSS({
-                domain: 'cs',
-                category: 'cs.AI',
-                limit: 20
-            });
-            
-            const result = response.data;
-            setStatusMessage(result.status === 'success' ? 
-                `RSS crawling completed: ${result.saved_count} papers saved` : 
-                `RSS crawling failed: ${result.error}`);
-        } catch (error) {
-            setStatusMessage(`RSS crawling error: ${error.message}`);
-        }
-        
-        setIsLoading(false);
-    };
-
-    const loadRecentPapers = async () => {
-        try {
-            const response = await paperAPI.getPapers('all', 0, 50);
-            const papersData = response.data;
+            console.log('CrawlingSystem: Loading recent papers...', { platform });
+            // daysBack 값을 7로 고정 (또는 필요에 따라 변경)
+            const daysBackValue = 7; 
+            const response = await paperAPI.getPapers(platform, daysBackValue, 50);
+            const papersData = response; // Fix: response is already the data array
+            console.log('CrawlingSystem: Received papers data from API:', papersData);
             console.info('Recent papers loaded:', papersData.length);
             setPapers(Array.isArray(papersData) ? papersData : []);
+            console.log('CrawlingSystem: Papers state updated with', Array.isArray(papersData) ? papersData.length : 0, 'papers.');
             setStatusMessage(`${Array.isArray(papersData) ? papersData.length : 0} 방금 크롤링된 논문 로드됨`);
         } catch (error) {
             console.error('Paper load error:', error);
@@ -126,28 +90,23 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
         }
     };
 
-    const loadPapersAfterTime = async (startTime) => {
+    const loadPapersAfterTime = async (crawlStartTime, platform = 'all') => {
         try {
             // 1초 대기 후 데이터베이스 동기화
+            console.log('CrawlingSystem: Waiting 1 second for database sync before loading papers...');
             await new Promise(resolve => setTimeout(resolve, 1000));
             
             console.log('=== 디버깅 시작 ===');
-            console.log('크롤링 시작 시간:', startTime);
+            console.log('크롤링 시작 시간:', crawlStartTime);
+            console.log('크롤링된 플랫폼:', platform);
             
-            const response = await paperAPI.getPapers('all', 0, 50);
-            const papersData = response.data;
+            await loadRecentPapers(platform);
             
-            console.log('API에서 받은 총 논문 수:', papersData.length);
-            console.log('첫 번째 논문:', papersData[0]);
-            
-            // 모든 논문을 일단 표시 (시간 필터링 제거)
-            setPapers(Array.isArray(papersData) ? papersData : []);
-            setStatusMessage(`총 ${papersData.length}개 논문 로드됨 (필터링 없음)`);
-            
+            console.log('CrawlingSystem: Finished loading papers after crawl.');
             console.log('=== 디버깅 완료 ===');
         } catch (error) {
-            console.error('Paper load error:', error);
-            setStatusMessage(`Paper load error: ${error.message}`);
+            console.error('Paper load error in loadPapersAfterTime:', error);
+            setStatusMessage(`Paper load error after crawl: ${error.message}`);
         }
     };
 
@@ -182,6 +141,7 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
             
             <div className="papers-count" style={{margin: '10px 0', fontWeight: 'bold'}}>
                 논문 수: {papers.length}개
+                {console.log('CrawlingSystem: Rendering results tab. Number of papers:', papers.length)}
             </div>
             
             <div className="paper-list">
@@ -201,7 +161,7 @@ const CrawlingSystem = ({ activeSubTab = 'setup' }) => {
                             <div className="paper-title">{paper.title}</div>
                         <div className="paper-meta">
                             <strong>ID:</strong> {paper.paper_id} | 
-                            <strong>Platform:</strong> {paper.platform || 'arxiv'} |
+                            <strong>Platform:</strong> {paper.platform} |
                             <strong>Authors:</strong> {Array.isArray(paper.authors) ? paper.authors.slice(0,2).join(', ') : paper.authors} | 
                             <strong>Published:</strong> {paper.published_date} |
                             <strong>Crawled:</strong> {paper.created_at}

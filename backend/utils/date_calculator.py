@@ -1,4 +1,7 @@
+import logging
 from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 
 class DateCalculator:
     @staticmethod
@@ -7,23 +10,16 @@ class DateCalculator:
         # Asia/Seoul 기준 현재 시간
         now_seoul = datetime.now(timezone(timedelta(hours=9)))
         
-        if days_back == 0:
-            # days_back=0일 때 최근 3일 범위로 설정 (주말 논문 업데이트 지연 대응)
-            start_seoul = (now_seoul - timedelta(days=3)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_seoul = (now_seoul + timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
-            
-            start_date = start_seoul.astimezone(timezone.utc)
-            end_date = end_seoul.astimezone(timezone.utc)
-        else:
-            # N일전(Seoul) 00:00부터 오늘(Seoul) 23:59까지를 UTC로 변환
-            start_seoul = (now_seoul - timedelta(days=days_back)).replace(hour=0, minute=0, second=0, microsecond=0)
-            end_seoul = now_seoul.replace(hour=23, minute=59, second=59, microsecond=999999)
-            
-            start_date = start_seoul.astimezone(timezone.utc)
-            end_date = end_seoul.astimezone(timezone.utc)
+        # N일전(Seoul) 00:00부터 오늘(Seoul) 23:59까지를 UTC로 변환
+        # days_back=0일 때의 특별 처리는 crawling_routes.py에서 db.get_all_papers()로 대체됨
+        start_seoul = (now_seoul - timedelta(days=days_back)).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_seoul = now_seoul.replace(hour=23, minute=59, second=59, microsecond=999999)
         
-        print(f"DEBUG: DateCalculator PATCHED - days_back: {days_back}, range: {start_date.date()} to {end_date.date()}")
-        print(f"DEBUG: UTC time range: {start_date.isoformat()} to {end_date.isoformat()}")
+        start_date = start_seoul.astimezone(timezone.utc)
+        end_date = end_seoul.astimezone(timezone.utc)
+        
+        logger.debug(f"DateCalculator: days_back: {days_back}, range: {start_date.date()} to {end_date.date()}")
+        logger.debug(f"UTC time range: {start_date.isoformat()} to {end_date.isoformat()}")
         return start_date, end_date
     
     @staticmethod

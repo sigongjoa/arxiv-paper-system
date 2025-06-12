@@ -6,29 +6,27 @@ const apiClient = axios.create({
 });
 
 export const paperAPI = {
-  getPapers: (domain = 'all', daysBack = 7, limit = 50, category = null) =>
-    apiClient.get('/papers', { params: { domain, days_back: daysBack, limit, category } }),
+  getPapers: async (domain = 'all', daysBack = 7, limit = 50, category = null) => {
+    try {
+      console.log('API: Attempting to fetch papers from /crawling/papers with params:', { domain, daysBack, limit, category });
+      const response = await apiClient.get('/crawling/papers', { params: { domain, days_back: daysBack, limit, category } });
+      const data = response.data;
+      console.log('API: Fetched papers successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Error fetching papers:', error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
   
-  searchPapers: (query, category = null, maxResults = 10) =>
-    apiClient.post('/search', { query, category, max_results: maxResults }),
-    
-  analyzePaper: (arxivId) =>
-    apiClient.post('/papers/analyze', { arxiv_id: arxivId }),
+  analyzePaper: (externalId) =>
+    apiClient.post('/papers/analyze', { external_id: externalId }),
     
   generateAnalysisPdf: (data) =>
     apiClient.post('/pdf/generate', data, { responseType: 'blob' }),
     
-  crawlPapers: (domain = 'all', daysBack = 7, limit = 10, category = null) =>
-    apiClient.post('/crawl', { domain, days_back: daysBack, limit, category }),
-
-  crawlPapersRSS: (domain = 'cs', limit = 50, category = null) =>
-    apiClient.post('/crawl-rss', { domain, limit, category }),
-
   getStats: () =>
-    apiClient.get('/stats'),
-  
-  multiCrawl: (domain, daysBack, category, limit) =>
-    apiClient.post('/multi/crawl', { domain, days_back: daysBack, category, limit }),
+    apiClient.get('/crawling/stats'),
 };
 
 export const newsletterAPI = {
@@ -85,7 +83,6 @@ export const aiAPI = {
   testAgentsConnection: () => apiClient.get('/agents/test/connection'),
   analyzePaperAgents: (arxivId) => apiClient.post('/agents/analyze/paper', { arxiv_id: arxivId }),
   analyzeCitationNetworkAgents: (arxivId) => apiClient.post('/agents/analyze/citation-network', { arxiv_id: arxivId }),
-  suggestRelatedPapers: (arxivId) => apiClient.post('/ai/suggest/related', { arxiv_id: arxivId }),
   comparePapers: (arxivIds) => apiClient.post('/ai/compare', { arxiv_ids: arxivIds }),
 };
 
@@ -95,6 +92,11 @@ export const recommendationAPI = {
   getStatus: () => apiClient.get('/recommendations/status'),
   getSimilarPapers: (paperId, limit = 10) => apiClient.get(`/recommendations/similar/${paperId}`, { params: { limit } }),
   rebuildIndex: () => apiClient.post('/recommendations/rebuild'),
+  searchPapersFaiss: (query, k = 10) =>
+    apiClient.get('/search_papers_faiss', { params: { query, k } }),
+  
+  recommendPapers: (userInterests, numCandidates = 500, topKRerank = 50) =>
+    apiClient.get('/recommend_papers', { params: { user_interests: userInterests, num_candidates: numCandidates, top_k_rerank: topKRerank } }),
 };
 
 export const citationAPI = {
@@ -106,10 +108,20 @@ export const citationAPI = {
 
 export const systemAPI = {
   getHealth: () => apiClient.get('/health'),
-  getPlatforms: () => apiClient.get('/platforms'),
-  getCrawlingStatus: () => apiClient.get('/crawling-status'),
-  multiCrawl: (request) => apiClient.post('/multi-crawl', request),
-  getMultiPlatforms: () => apiClient.get('/multi/platforms'),
+  getPlatforms: async () => {
+    try {
+      console.log('API: Attempting to fetch platforms from /platforms...');
+      const response = await apiClient.get('/platforms');
+      const data = response.data;
+      console.log('API: Fetched platforms successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Error fetching platforms:', error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
+  getCrawlingStatus: () => apiClient.get('/crawling/crawling-status'),
+  multiCrawl: (request) => apiClient.post('/crawling/crawl', request),
   smartCrawl: (request) => apiClient.post('/enhanced/smart-crawl', request),
   getPDFStatus: () => apiClient.get('/pdf/status'),
   syncPDFs: () => apiClient.post('/pdf/sync'),
